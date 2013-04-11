@@ -85,10 +85,6 @@
 
 /*****************************************************************************/
 
-// Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
-word timer_overflow_count;
-
-
 void timer_init(void);
 void msleep(word);
 

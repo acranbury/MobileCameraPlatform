@@ -5,6 +5,9 @@
 #include "timer.h"
 
 
+// Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
+word timer_overflow_count;
+
 /* Initialize timer module */
 void timer_init(void) {
     timer_overflow_count = 0;   // Reset overflow counter
