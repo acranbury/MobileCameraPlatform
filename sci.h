@@ -5,8 +5,8 @@
 #include "utils.h"
 
 
-#define SCI_BUFSIZ          16  // size in bytes of the SCI receive ring buffer
-#define SCI_CMDSIZ          8
+#define SCI_BUFSIZ          16  // Size in bytes of the SCI receive ring buffer
+#define SCI_CMDSIZ          8   // Length of command in bytes
 
 // No parity, 8 data bits, 1 stop bit (mask bits cleared)
 #define SCICR1_INIT     ( SCICR1_PE_MASK | SCICR1_M_MASK )
@@ -50,11 +50,11 @@
 
 void SCIinit(void);
 void SCIflush(void);
-void SCIdequeue(byte *);
+void SCIdequeue(char *);
 void SCIputc(char);
 void SCIputs(const char *);
 void SCIprintf(const char *, ... );
-byte SCIgetc(void);
+char SCIgetc(void);
 char *SCIgets(void);
 
 
