@@ -1,10 +1,10 @@
 
 #include <hidef.h>      /* common defines and macros */
-#include <string.h>
-#include "derivative.h"      /* derivative-specific definitions */
+#include "derivative.h" /* derivative-specific definitions */
 #include "timer.h"
 #include "sci.h"
 #include "lcd.h"
+#include <string.h>     // memset() and strcmp()
 
 
 // command size
@@ -15,9 +15,9 @@
 #define PAN 4
 #define TLT 5
 
-void cmdparser (char * buffer);
-int cmdconv (char * tempcmd) ;
-void seekcmd (unsigned char * buffer, int * numchars) ;
+void cmdparser(char *);
+int cmdconv(char *);
+void seekcmd(char *, int *);
 
 
 #pragma MESSAGE DISABLE C1420   // Function call result ignored warning disable (for memset)
@@ -29,11 +29,10 @@ void main(void) {
     
     // initialize timer, LCD, and SCI modules
     timer_init();
+    SCIinit();
     
     msleep(16);
     LCDinit();
-    
-    SCIinit();
     
     EnableInterrupts;
     
@@ -63,15 +62,13 @@ void cmdparser (char * buffer) {
     static int numcmd = 0;  
     
     // while we do not have a valid command and we still have characters to check,
-    while ((buffer[0]) && ((numchars + 2) < SCI_BUFSIZ )) 
-        { 
-          tempcmd [0] = buffer[numchars];
-          tempcmd [1] = buffer[1 + numchars]; 
-          tempcmd [2] = buffer[2 + numchars]; 
-          tempcmd [3] = 0;  		  
-        switch (cmdconv(tempcmd)) 
-        {
-            case 0:   // If no command found, go to next character.
+    while ((buffer[0]) && ((numchars + 2) < SCI_BUFSIZ )) { 
+        tempcmd [0] = buffer[numchars];
+        tempcmd [1] = buffer[1 + numchars]; 
+        tempcmd [2] = buffer[2 + numchars]; 
+        tempcmd [3] = 0;  		  
+        switch (cmdconv(tempcmd)) {
+        case 0:   // If no command found, go to next character.
             seekcmd(buffer, &numchars);
             break;
             
@@ -120,18 +117,18 @@ void cmdparser (char * buffer) {
 *   Output: int result: Resulting integer value.
 *
 ***************************************************************/
-int cmdconv ( char * tempcmd) {
-     if (!(strcmp(tempcmd, "png")))
+int cmdconv (char * tempcmd) {
+    if (!(strcmp(tempcmd, "png")))
         return PNG;
-     else if (!(strcmp(tempcmd, "abt")))
+    else if (!(strcmp(tempcmd, "abt")))
         return ABT;
-     else if (!(strcmp(tempcmd, "tlt")))
+    else if (!(strcmp(tempcmd, "tlt")))
         return TLT;  
-     else if (!(strcmp(tempcmd, "pan")))
+    else if (!(strcmp(tempcmd, "pan")))
         return PAN;   
-     else if (!(strcmp(tempcmd, "txt")))
+    else if (!(strcmp(tempcmd, "txt")))
         return TXT;
-     else 
+    else
         return 0;
 }
 
@@ -142,9 +139,9 @@ int cmdconv ( char * tempcmd) {
 *   Input: char * buffer
 *
 ***************************************************************/
-void seekcmd (unsigned char * buffer, int * numchars) {
+void seekcmd (char * buffer, int * numchars) {
     while ((*buffer++ != 0) && (*numchars + 2 <= SCI_BUFSIZ) )  // Seek until first zero.      
-      (*numchars)++;   
+        (*numchars)++;
     while ((*buffer++ == 0) && (*numchars + 2 <= SCI_BUFSIZ) ) // Seek until non-zero is found. (beginning of new cmd).
-      (*numchars)++;
+        (*numchars)++;
 }
