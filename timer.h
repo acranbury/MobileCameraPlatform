@@ -2,7 +2,6 @@
 #ifndef _TIMER_H
 #define _TIMER_H
 
-#include "derivative.h"
 #include "utils.h"
 
 
@@ -85,6 +84,10 @@
 #define IC_DETECT_ANY       0x03
 
 /*****************************************************************************/
+
+// Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
+word timer_overflow_count;
+
 
 void timer_init(void);
 void msleep(word);

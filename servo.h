@@ -2,9 +2,7 @@
 #ifndef _SERVO_H
 #define _SERVO_H
 
-#include "derivative.h"
 #include "utils.h"
-#include "timer.h"
 
 
 // Servo properties

@@ -1,5 +1,9 @@
 /* Stepper motor functions */
 
+#include <mc9s12c32.h>
+#include "timer.h"
+#include "stepper.h"
+
 
 /* Initialize stepper motor control */
 void stepper_init(void) {

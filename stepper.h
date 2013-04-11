@@ -2,9 +2,7 @@
 #ifndef _STEPPER_H
 #define _STEPPER_H
 
-#include "derivative.h"
 #include "utils.h"
-#include "timer.h"
 
 
 #define STEPPER_DELAY_INIT      5               // Initial step delay in ms

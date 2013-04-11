@@ -1,5 +1,9 @@
 /* Servo motor functions */
 
+#include <mc9s12c32.h>
+#include "timer.h"
+#include "servo.h"
+
 
 /* Initialize servo timer channel */
 void servo_init(void) {

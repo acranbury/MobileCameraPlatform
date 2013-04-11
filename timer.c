@@ -1,7 +1,8 @@
 /* Timer module functions */
 
-// Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
-word timer_overflow_count;
+#include <mc9s12c32.h>
+#include "utils.h"
+#include "timer.h"
 
 
 /* Initialize timer module */

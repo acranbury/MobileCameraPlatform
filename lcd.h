@@ -3,11 +3,7 @@
 #ifndef _LCD_H
 #define _LCD_H
 
-#include "derivative.h"
 #include "utils.h"
-#include "timer.h"
-#include <stdio.h>      // for vsprintf()
-#include <stdarg.h>     // for va_*() functions
 
 
 #define LCD_MAX_BUFSIZ      32  // Max character buffer size for LCDprintf() (32 chars per line)

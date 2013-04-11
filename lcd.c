@@ -1,6 +1,13 @@
 /*           LCD module functions           */
 /* For Hitachi HD44780 character LCD module */
 
+#include <mc9s12c32.h>
+#include <stdio.h>      // for vsprintf()
+#include <stdarg.h>     // for va_*() functions
+#include "utils.h"
+#include "timer.h"
+#include "lcd.h"
+
 
 /* Initialize LCD */
 /* Wait at least 15ms after power-on */
