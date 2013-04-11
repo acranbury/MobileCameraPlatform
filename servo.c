@@ -7,8 +7,8 @@ void servo_init(void) {
     // Set initial waveform on and off times
     // Global interrupts masked off just in case, but servo_init() should be called before global interrupts are enabled for the first time
     DisableInterrupts;
-      servo_on_time = SERVO_INIT_ON_TIME;
-      servo_off_time = (SERVO_PERIOD * OC_DELTA_1US) - servo_on_time;
+        servo_on_time = SERVO_INIT_ON_TIME;
+        servo_off_time = (SERVO_PERIOD * OC_DELTA_1US) - servo_on_time;
     EnableInterrupts;
     
     // Enable timer module if not already enabled
@@ -22,8 +22,8 @@ void servo_init(void) {
 }
 
 /* Set servo arm to angle */
-void servo_angle(unsigned char angle) {
-    unsigned int on_time, off_time;
+void servo_angle(byte angle) {
+    word on_time, off_time;
     
     // Bound to limits
     if(angle > SERVO_LIMIT_ANGLE) angle = SERVO_LIMIT_ANGLE;
@@ -38,7 +38,7 @@ void servo_angle(unsigned char angle) {
 }
 
 /* Set servo on and off times */
-static void servo_set_times(unsigned int on_time, unsigned int off_time) {
+static void servo_set_times(word on_time, word off_time) {
     // Critical region; servo_on_time and servo_off_time are used by the servo ISR
     DisableInterrupts;
         servo_on_time = on_time;
@@ -50,7 +50,7 @@ static void servo_set_times(unsigned int on_time, unsigned int off_time) {
 
 /* Servo output compare interrupt handler */
 interrupt VECTOR_NUM(TC_VECTOR(TC_SERVO)) void Servo_ISR(void) {
-    static char tog = 0;
+    static byte tog = 0;
     
     // Acknowledge interrupt and set OC for next event
     // First event time should be the servo on time (tog initially false)

@@ -29,11 +29,11 @@
 /*****************************************************************************/
 
 // Servo ISR globals for waveform on and off times
-static unsigned int servo_on_time, servo_off_time;
+static word servo_on_time, servo_off_time;
 
 void servo_init(void);
-void servo_angle(unsigned char);
-static void servo_set_times(unsigned int, unsigned int);
+void servo_angle(byte);
+static void servo_set_times(word, word);
 
 
 #endif // _SERVO_H
