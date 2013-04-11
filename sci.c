@@ -3,11 +3,12 @@
 #include <mc9s12c32.h>
 #include <stdio.h>      // for vsprintf()
 #include <stdarg.h>     // for va_*() functions
+#include "utils.h"
 #include "sci.h"
 
 
 // Global SCI Receive ring buffer
-byte SCIbuf[SCI_BUFSIZ];
+char SCIbuf[SCI_BUFSIZ];
 byte SCIcount;
 
 /* Initialize SCI module */
@@ -31,7 +32,7 @@ void SCIflush(void) {
 }
 
 /* Empty internal SCI buffer */
-void SCIdequeue(byte * ch){
+void SCIdequeue(char *buf){
     byte bytenum;
     static byte i = 0;
     
@@ -40,10 +41,10 @@ void SCIdequeue(byte * ch){
         // Loop through all bytes in command
         for (bytenum=0; bytenum < SCI_CMDSIZ; bytenum++) {
         DisableInterrupts;
-          *ch++ = SCIbuf[i];
-          SCIbuf[i] = '\0';
-          i = (i+1) % SCI_BUFSIZ;
-          SCIcount--;   // Decrement global buffer byte counter
+          *buf++ = SCIbuf[i];       // Fill buffer with bytes from SCI buffer
+          SCIbuf[i] = '\0';         // Append trailing null
+          i = (i+1) % SCI_BUFSIZ;   // Increment to next index; wrap to beginning if buffer overflows
+          SCIcount--;       // Decrement global buffer byte counter
         EnableInterrupts;
         }
     }
@@ -75,8 +76,8 @@ void SCIprintf(const char *fmt, ... ) {
 }
 
 /* Read char from SCI */
-byte SCIgetc(void) {
-    byte c;
+char SCIgetc(void) {
+    char c;
     
     while(!(SCISR1 & SCISR1_RDRF_MASK));    // Wait for receive register to become empty
     c = SCIDRL;
