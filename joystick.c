@@ -18,6 +18,12 @@
 #define HOMEPAN		90
 #define DELTATILT	1
 #define DELTAPAN	1
+#define MAXTILTUP	120
+#define MAXTILTDOWN	0
+#define MAXPANLEFT	0
+#define MAXPANRIGHT	180
+
+#define BUFSIZE		8
 
 #define GAMEPAD		"/dev/input/js0"
 
@@ -46,7 +52,7 @@
 
 // structure for gamepad
 struct gamepad{
-	int buttonA,buttonB,rightThumbUD,rightThumbLR;
+	int buttonA,buttonB,buttonX,rightThumbUD,rightThumbLR;
 }controller;
 
 int main (int argc, char **argv)
@@ -57,7 +63,7 @@ int main (int argc, char **argv)
 	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int buttonAPressed = 0, buttonBPressed = 0;
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0;
 	struct timespec *timer;
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
@@ -65,7 +71,7 @@ int main (int argc, char **argv)
 	int version = 0x000800;
 	char name[NAME_LENGTH] = "Unknown";
 	
-	unsigned char buffer[10] = {'0','1','2','3','4','5','6','7','8','9'};
+	char buffer[BUFSIZE] = {'0','1','2','3','4','5','6','7'};
 
 	// open the gamepad port
 	if ((fd = open(GAMEPAD, O_RDONLY)) < 0) {
@@ -91,7 +97,7 @@ int main (int argc, char **argv)
 	// open and initialize the serial port
 	SerialOpen();
 	SerialInit();
-	SerialWrite(buffer,10);
+	//SerialWrite(buffer,10);
 
 	// open the gamepad port in nonblocking mode
 	fcntl(fd, F_SETFL, O_NONBLOCK);
@@ -118,6 +124,7 @@ int main (int argc, char **argv)
 			// fill out the structure
 			controller.buttonA = button[BUTTONA];
 			controller.buttonB = button[BUTTONB];
+			controller.buttonX = button[BUTTONX];
 			controller.rightThumbLR = axis[AXISRTLR];
 			controller.rightThumbUD = axis[AXISRTUD];
 
@@ -152,40 +159,61 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonBPressed = 0;
+				
+			if(controller.buttonX){
+				// Take an audio sample
+				if(buttonXPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "png00000");
+					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					buttonXPressed = 1;
+				}
+			}else
+				buttonXPressed = 0;
 
 			if(controller.rightThumbLR > 500){
 				// pan left
 				pan += DELTAPAN;
+				if(pan > MAXPANRIGHT)
+					pan = MAXPANRIGHT;
 				// pan camera
 				//SerialWrite("", 8);
 				printf("Pan: %d", pan);
+				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			else if(controller.rightThumbLR < -500){
 				// pan right
 				pan -= DELTAPAN;
+				if(pan < MAXPANLEFT)
+					pan = MAXPANLEFT;
 				// pan camera
 				printf("Pan: %d", pan);
+				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			
 			if(controller.rightThumbUD > 500){
 				// tilt down
 				tilt -= DELTATILT;
+				if(tilt < MAXTILTDOWN)
+					tilt = MAXTILTDOWN;
 				// tilt camera
 				printf("Tilt: %d", tilt);
+				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			else if(controller.rightThumbUD < -500){
 				// tilt up
 				tilt += DELTATILT;
+				if(tilt > MAXTILTUP)
+					tilt = MAXTILTUP;
 				// tilt camera
 				printf("Tilt: %d", tilt);
+				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 		}
 			
 		fflush(stdout);
 	}
-
-	usleep(10000);
-
-	printf("joystick: unknown mode: %s\n", argv[1]);
-	return -1;
 }

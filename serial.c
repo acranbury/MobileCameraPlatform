@@ -17,8 +17,8 @@ void SerialInit(void){
 		tcgetattr(fd, &options);
 		
 		// set baud rates to 9600
-		cfsetispeed(&options, B9600);
-		cfsetospeed(&options, B9600);
+		cfsetispeed(&options, B38400);
+		cfsetospeed(&options, B38400);
 		
 		// set 8N1
 		options.c_cflag &= ~PARENB;
@@ -78,17 +78,12 @@ void SerialClose(void){
 // returns the number of bytes written
 int SerialWrite(unsigned char * buffer, int numBytes){
 	int bytesWritten = 0;
-	int i;
 	// sanity check on fd
 	if(fd > 0)
 		// write the buffer to the serial port
 		if((bytesWritten = write(fd, buffer, numBytes)) < 0)
 			// didn't write anything to the port
 			printf("Serial write of %d bytes failed - Error number: %d\n", numBytes, errno);
-		else{
-			for(i = 0; i < numBytes; i++)
-				printf("%d", buffer[i]);
-		}
 
 	// return number of bytes written
 	return(bytesWritten);
