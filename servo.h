@@ -26,11 +26,8 @@
 
 /*****************************************************************************/
 
-// Servo ISR globals for waveform on and off times
-static word servo_on_time, servo_off_time;
-
 void servo_init(void);
-void servo_angle(byte);
+void servo_set_angle(byte);
 static void servo_set_times(word, word);
 
 

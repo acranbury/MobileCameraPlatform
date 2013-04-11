@@ -5,6 +5,10 @@
 #include "servo.h"
 
 
+// Servo ISR globals for waveform on and off times
+static word servo_on_time, servo_off_time;
+
+
 /* Initialize servo timer channel */
 void servo_init(void) {
     
@@ -26,7 +30,7 @@ void servo_init(void) {
 }
 
 /* Set servo arm to angle */
-void servo_angle(byte angle) {
+void servo_set_angle(byte angle) {
     word on_time, off_time;
     
     // Bound to limits
