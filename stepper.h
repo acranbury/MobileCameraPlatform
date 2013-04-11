@@ -31,17 +31,6 @@
 #define STEPPER_LIMIT_INPUT_EN          ATDDIEN
 #define STEPPER_LIMIT_INPUT_EN_MASK     ( ATDDIEN_IEN6_MASK | ATDDIEN_IEN7_MASK )
 
-/*****************************************************************************/
-
-// Bit patterns for stepper motor
-static byte const STEPPER_PATTERN[] = { 0x8, 0xA, 0x2, 0x6, 0x4, 0x5, 0x1, 0x9 };
-
-static byte stepper_calibrated = 0; // Stepper calibrated flag
-static word stepper_position = 0;   // Current stepper position
-static word stepper_limit = 0;      // Maximum stepper position
-static word stepper_setpoint;       // Stepper position to move to
-static byte stepper_delay;          // Delay in ms between steps
-static char stepper_step_type;      // Half-stepping or full-stepping, plus direction (+/-)
 
 #define HALF_STEP_LEFT      -1
 #define HALF_STEP_RIGHT     +1
