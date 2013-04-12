@@ -82,20 +82,25 @@ void cmdparser(char *buffer) {
         
         case PNG:   // ping
             SCIprintf("png%d",numcmd);   // echo command confirmation with stamp.
+            LCDclear();
+            LCDputs("Ping!");
+            
             numcmd++;
             numchars += 8;
             break;
         
         case ABT:  // STOP THE PRESS!
             SCIprintf("abt%d",numcmd);
+            LCDclear();
+            LCDputs("Abort!\nAbort!");
+            
             numcmd++;
             numchars += 8;
             break;
         
         case TLT:  // Tilt the camera.
             SCIprintf("tlt%d",numcmd);
-            LCDclear();
-            LCDprintf("Servo Angle: %d", atoi(&(buffer[4])));
+            LCDprintf("\rServo Angle: %d", atoi(&(buffer[4])));
             servo_set_angle(atoi(&(buffer[4])));
             
             numcmd++;
@@ -104,9 +109,8 @@ void cmdparser(char *buffer) {
         
         case PAN:  // Tilt the camera.
             SCIprintf("pan%d",numcmd);
-            LCDclear();
-            LCDprintf("Step pos: %d", atoi(&(buffer[4])));
-            stepper_set_pos(atoi(&(buffer[4])));
+            LCDprintf("\nStep angle: %d", atoi(&(buffer[4])));
+            stepper_set_angle(atoi(&(buffer[4])));
             
             numcmd++;
             numchars += 8;

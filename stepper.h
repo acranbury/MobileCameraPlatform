@@ -5,6 +5,7 @@
 #include "utils.h"
 
 
+#define STEPPER_MAX_ANGLE       180             // Maximum angle in degrees (fully right)
 #define STEPPER_DELAY_INIT      5               // Initial step delay in ms
 #define STEPPER_STEP_INIT       HALF_STEP_LEFT  // Initial step type
 #define TC_STEPPER              4               // Timer channel used to control all four stepper coil lines
@@ -44,6 +45,7 @@ void stepper_init(void);
 void stepper_calibrate(void);
 void stepper_reverse(void);
 void stepper_set_pos(word);
+void stepper_set_angle(byte);
 void stepper_set_delay(byte);
 
 

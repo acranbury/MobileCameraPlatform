@@ -83,6 +83,19 @@ void stepper_set_pos(word setpoint) {
     }
 }
 
+/* Move stepper to angle */
+void stepper_set_angle(byte angle) {
+    word position;
+    
+    // Bound to limits
+    if(angle > STEPPER_MAX_ANGLE) angle = STEPPER_MAX_ANGLE;
+    
+    // Calculate absolute position
+    position = (angle * ((stepper_limit * 10) / STEPPER_MAX_ANGLE)) / 10;
+    
+    stepper_set_pos(position);
+}
+
 /* Set delay in ms between steps */
 void stepper_set_delay(byte delay) {
     if(delay <= 524)    // Timer channel is 16bits, delay is multiplied by 125 (1ms count with prescaler of 64)

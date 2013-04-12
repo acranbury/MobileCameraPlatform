@@ -13,7 +13,7 @@
 
 #define SERVO_MIN_ANGLE     0       // Minimum angle in degrees
 #define SERVO_MAX_ANGLE     180     // Maximum angle in degrees
-#define SERVO_LIMIT_ANGLE   120     // Maximum physical angle in degrees (not used in calculations)
+#define SERVO_LIMIT_ANGLE   115     // Maximum physical angle in degrees (not used in calculations)
 
 #define SERVO_GAIN          (((SERVO_MAX_ANGLE - SERVO_MIN_ANGLE) * 100) / (SERVO_MAX_ON_TIME - SERVO_MIN_ON_TIME))
 
