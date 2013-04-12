@@ -17,6 +17,7 @@
 #define TXT         3
 #define PAN         4
 #define TLT         5
+#define HOM         6
 
 
 void cmdparser(char *);
@@ -25,7 +26,7 @@ void seekcmd(char *, int *);
 
 /*****************************************************************************/
 
-#pragma MESSAGE DISABLE C1420   // Function call result ignored warning disable (for memset)
+#pragma MESSAGE DISABLE C1420   // Disable "Function call result ignored" warning (for memset)
 void main(void) {
     char buffer[SCI_BUFSIZ+1] = {0};
     
@@ -98,19 +99,31 @@ void cmdparser(char *buffer) {
             numchars += 8;
             break;
         
-        case TLT:  // Tilt the camera.
+        #pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for atoi)
+        case TLT:  // Tilt camera up/down
             SCIprintf("tlt%d",numcmd);
-            LCDprintf("\rServo Angle: %d", atoi(&(buffer[4])));
+            LCDprintf("\rServo Angle: %03d", atoi(&(buffer[4])));
             servo_set_angle(atoi(&(buffer[4])));
             
             numcmd++;
             numchars += 8;
             break;
         
-        case PAN:  // Tilt the camera.
+        case PAN:  // Pan camera left/right
             SCIprintf("pan%d",numcmd);
-            LCDprintf("\nStep angle: %d", atoi(&(buffer[4])));
+            LCDprintf("\nStep angle:  %03d", atoi(&(buffer[4])));
             stepper_set_angle(atoi(&(buffer[4])));
+            
+            numcmd++;
+            numchars += 8;
+            break;
+        
+        case HOM:  // Home the camera
+            SCIprintf("hom%d",numcmd);
+            servo_set_angle(90);
+            stepper_set_angle(90);
+            LCDclear();
+            LCDputs("Camera homed");
             
             numcmd++;
             numchars += 8;
@@ -149,6 +162,8 @@ int cmdconv(char *cmd) {
         return PAN;   
     else if(!(strcmp(cmd, "txt")))
         return TXT;
+    else if(!(strcmp(cmd, "hom")))
+        return HOM;
     else
         return 0;
 }
