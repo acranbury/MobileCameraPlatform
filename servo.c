@@ -1,8 +1,9 @@
 /* Servo motor functions */
 
+#include <hidef.h>      // required for EnableInterrupts and DisableInterrupts macros
 #include <mc9s12c32.h>
-#include "timer.h"
 #include "servo.h"
+#include "timer.h"
 
 
 // Servo ISR globals for waveform on and off times
