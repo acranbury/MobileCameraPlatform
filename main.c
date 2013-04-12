@@ -18,6 +18,7 @@
 #define PAN         4
 #define TLT         5
 #define HOM         6
+#define CAL         7
 
 
 void cmdparser(char *);
@@ -129,6 +130,22 @@ void cmdparser(char *buffer) {
             numchars += 8;
             break;
         
+        case CAL:  // Calibrate the camera
+            SCIprintf("hom%d",numcmd);
+            
+            LCDputs("Calibrating...");
+            stepper_calibrate();
+            
+            servo_set_angle(90);
+            stepper_set_angle(90);
+            
+            LCDclear();
+            LCDputs("Camera calibrated");
+            
+            numcmd++;
+            numchars += 8;
+            break;
+        
         /*
         case TXT:  // Print to LCD.
             SCIprintf("txt%d",numcmd);
@@ -164,6 +181,8 @@ int cmdconv(char *cmd) {
         return TXT;
     else if(!(strcmp(cmd, "hom")))
         return HOM;
+    else if(!(strcmp(cmd, "cal")))
+        return CAL;
     else
         return 0;
 }
