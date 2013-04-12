@@ -9,6 +9,7 @@
 #include "sci.h"
 #include "servo.h"
 #include "stepper.h"
+#include "encoders.h"
 
 
 #define CMD_LEN     3   // command size
@@ -31,11 +32,12 @@ void seekcmd(char *, int *);
 void main(void) {
     char buffer[SCI_BUFSIZ+1] = {0};
     
-    // initialize timer, SCI, servo, stepper and LCD modules
+    // Initialize all nessesary modules
     timer_init();
     SCIinit();
     servo_init();
     stepper_init();
+    encoder_init();
     
     msleep(16);
     LCDinit();
@@ -95,6 +97,8 @@ void cmdparser(char *buffer) {
             SCIprintf("abt%d",numcmd);
             LCDclear();
             LCDputs("Abort!\nAbort!");
+            //{__asm STOP;};    // try one or the other
+            //HALT_AND_QUIT;
             
             numcmd++;
             numchars += 8;
