@@ -13,7 +13,7 @@ byte SCIcount;
 
 /* Initialize SCI module */
 void SCIinit(void) {
-    SET_SCI_BAUD(BAUD9600);         // Set baud rate
+    SET_SCI_BAUD(BAUD38400);        // Set baud rate
     CLR_BITS(SCICR1,SCICR1_INIT);   // Set port configuration
     
     SCIflush();
