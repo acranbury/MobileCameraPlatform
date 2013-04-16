@@ -3,6 +3,7 @@
 
 #include <mc9s12c32.h>
 #include "utils.h"
+#include "pwm.h"
 
 #define MOTOR1_PWM      4
 #define MOTOR2_PWM      5

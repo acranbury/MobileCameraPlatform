@@ -1,5 +1,6 @@
 /* Encoders */
 
+#include <hidef.h>      // required for EnableInterrupts and DisableInterrupts macros
 #include <mc9s12c32.h>
 #include "utils.h"
 #include "timer.h"
@@ -18,8 +19,10 @@ static word encoder1_count, encoder2_count;
 
 /* Initialize encoders */
 void encoder_init(void) {
-    encoder1_count = 0;
-    encoder2_count = 0;
+    DisableInterrupts;
+      encoder1_count = 0;
+      encoder2_count = 0;
+    EnableInterrupts;
     
     // Encoder channels set to input capture
     TC_IC(TC_ENC1);
@@ -37,14 +40,22 @@ void encoder_init(void) {
 
 /* Return current encoder count */
 word encoder_count(byte encoder) {
+    word count;
     switch(encoder) {
     case 1:
-        return encoder1_count;
+        DisableInterrupts;
+          count = encoder1_count
+        EnableInterrupts;
+        return count;
         break;
     case 2:
-        return encoder2_count;
+        DisableInterrupts;
+          count = encoder2_count
+        EnableInterrupts;
+        return count;
         break;
     default:
+        return 0;
         break;
     }
 }
