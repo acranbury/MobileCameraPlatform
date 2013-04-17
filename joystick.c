@@ -1,6 +1,6 @@
-
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <time.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -8,15 +8,24 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include "serial.h"
 
 #include <linux/joystick.h>
 
 #define NAME_LENGTH 128
 
-#define HOMETILT	0
-#define HOMEPAN		0
+#define HOMETILT	90
+#define HOMEPAN		90
 #define DELTATILT	1
 #define DELTAPAN	1
+#define MAXTILTUP	120
+#define MAXTILTDOWN	0
+#define MAXPANLEFT	0
+#define MAXPANRIGHT	180
+
+#define BUFSIZE		8
+
+#define GAMEPAD		"/dev/input/js0"
 
 // Gamepad buttons
 #define BUTTONA		0
@@ -41,31 +50,36 @@
 #define AXISDPADLR	6
 #define AXISDPADUD	7
 
+// structure for gamepad
+struct gamepad{
+	int buttonA,buttonB,buttonX,rightThumbUD,rightThumbLR;
+}controller;
+
 int main (int argc, char **argv)
 {
+	
+	int *axis;
+	int *button;
+	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int tiltPressed = 0, panPressed = 0;
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0;
+	struct timespec *timer;
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
+	long currTime, prevTime;
 	int version = 0x000800;
 	char name[NAME_LENGTH] = "Unknown";
+	
+	char buffer[BUFSIZE] = {'0','1','2','3','4','5','6','7'};
 
-	if (argc < 2 || argc > 3 || !strcmp("--help", argv[1])) {
-		puts("");
-		puts("Usage: joystick [<mode>] <device>");
-		puts("");
-		puts("Modes:");
-		puts("  --normal           One-line mode showing immediate status");
-		puts("  --event            Prints events as they come in");
-		puts("");
-		exit(1);
-	}
-	if ((fd = open(argv[argc - 1], O_RDONLY)) < 0) {
+	// open the gamepad port
+	if ((fd = open(GAMEPAD, O_RDONLY)) < 0) {
 		perror("joystick");
 		exit(1);
 	}
 
+	// get info from gamepad driver
 	ioctl(fd, JSIOCGVERSION, &version);
 	ioctl(fd, JSIOCGAXES, &axes);
 	ioctl(fd, JSIOCGBUTTONS, &buttons);
@@ -75,26 +89,29 @@ int main (int argc, char **argv)
 		name, axes, buttons, version >> 16, (version >> 8) & 0xff, version & 0xff);
 	printf("Testing ... (interrupt to exit)\n");
 
-/*
- * Event interface, single line readout.
- */
+	// allocate memory for structures
+	axis = calloc(axes, sizeof(int));
+	button = calloc(buttons, sizeof(char));
+	timer = calloc(1, sizeof(struct timespec));
 
-	if (argc == 2 || !strcmp("--normal", argv[1])) {
+	// open and initialize the serial port
+	SerialOpen();
+	SerialInit();
+	//SerialWrite(buffer,10);
 
-		int *axis;
-		int *button;
-		int i;
-		struct js_event js;
+	// open the gamepad port in nonblocking mode
+	fcntl(fd, F_SETFL, O_NONBLOCK);
 
-		axis = calloc(axes, sizeof(int));
-		button = calloc(buttons, sizeof(char));
+	// get current time
+	clock_gettime(CLOCK_REALTIME, timer);
+	currTime = timer->tv_nsec;
 
-		while (1) {
-			if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
-				perror("\njstest: error reading");
-				exit (1);
-			}
+	while (1) {
+		
+		// do a read of the gamepad port
+		if(read(fd, &js, sizeof(struct js_event)) == sizeof(struct js_event)){
 			
+			// get the type of event, fill out button or axis appropriately
 			switch(js.type & ~JS_EVENT_INIT) {
 			case JS_EVENT_BUTTON:
 				button[js.number] = js.value;
@@ -102,169 +119,101 @@ int main (int argc, char **argv)
 			case JS_EVENT_AXIS:
 				axis[js.number] = js.value;
 				break;
-			}
+			}	
 
-			printf("\r");
+			// fill out the structure
+			controller.buttonA = button[BUTTONA];
+			controller.buttonB = button[BUTTONB];
+			controller.buttonX = button[BUTTONX];
+			controller.rightThumbLR = axis[AXISRTLR];
+			controller.rightThumbUD = axis[AXISRTUD];
 
-			if (axes) {
-				printf("Axes: ");
-				for (i = 0; i < axes; i++)
-					printf("%2d:%6d ", i, axis[i]);
-			}
-
-			if (buttons) {
-				printf("Buttons: ");
-				for (i = 0; i < buttons; i++)
-					printf("%2d:%s ", i, button[i] ? "on " : "off");
-			}
-
-			// Button A pressed
-			if(button[BUTTONA]){
-				// take a picture
-				// TakePhotoSample();
-				printf("Photo Sample\n");
-			}
-			
-			// Button B pressed
-			if(button[BUTTONB]){
-				// take audio sample
-				// TakeAudioSample();
-				printf("Audio Sample\n");
-			}
-
-			// DPAD up/down pressed
-			if(axis[AXISDPADUD]){
-				tiltPressed = 1;
-			}
-			else
-				tiltPressed = 0;
-			
-			if(tiltPressed){
-				// send camera tilt command
-				if(axis[AXISDPADUD] > 0){
-					// tilt down
-					tilt -= DELTATILT;
-				}
-				else{
-					// tilt up
-					tilt += DELTATILT;
-				}
-				printf("Tilt: %d", tilt);
-			}
-
-			// DPAD left/right pressed
-			if(axis[AXISDPADLR]){
-				panPressed = 1;
-			}else
-				panPressed = 0;
-
-			if(panPressed){
-				// send camera pan command
-				if(axis[AXISDPADLR] > 0){
-					// pan left
-					pan += DELTAPAN;
-				}
-				else{
-					// pan right
-					pan -= DELTAPAN;
-				}
-				printf("Pan: %d", pan);
-			}
-			
-			fflush(stdout);
-		}
-	}
-
-
-/*
- * Reading in nonblocking mode.
- */
-
-	if (!strcmp("--nonblock", argv[1])) {
-
-		int *axis;
-		int *button;
-		struct js_event js;
-
-		axis = calloc(axes, sizeof(int));
-		button = calloc(buttons, sizeof(char));
-
-		fcntl(fd, F_SETFL, O_NONBLOCK);
-
-		while (1) {
-			read(fd, &js, sizeof(struct js_event));
+		}else
 			if (errno != EAGAIN) {
-				perror("\njstest: error reading");
-				exit (1);
-			}
-
-			switch(js.type & ~JS_EVENT_INIT) {
-				case JS_EVENT_BUTTON:
-					button[js.number] = js.value;
-					break;
-				case JS_EVENT_AXIS:
-					axis[js.number] = js.value;
-					break;
-			}
-
-			// Button A pressed
-			if(button[BUTTONA]){
-				// take a picture
-				// TakePhotoSample();
-				printf("Photo Sample\n");
-			}
-		
-			// Button B pressed
-			if(button[BUTTONB]){
-				// take audio sample
-				// TakeAudioSample();
-				printf("Audio Sample\n");
-			}
-
-			// DPAD up/down pressed
-			if(axis[AXISDPADUD])
-				tiltPressed = 1;
-			else
-				tiltPressed = 0;
-		
-			// DPAD left/right pressed
-			if(axis[AXISDPADLR])
-				panPressed = 1;
-			else
-				panPressed = 0;
-			
-			if(tiltPressed){
-				// send camera tilt command
-				if(axis[AXISDPADUD] > 0){
-					// tilt down
-					tilt -= DELTATILT;
-				}
-				else{
-					// tilt up
-					tilt += DELTATILT;
-				}
-				printf("Tilt: %d", tilt);
-			}
-
-			if(panPressed){
-				// send camera pan command
-				if(axis[AXISDPADLR] > 0){
-					// pan left
-					pan += DELTAPAN;
-				}
-				else{
-					// pan right
-					pan -= DELTAPAN;
-				}
-				printf("Pan: %d", pan);
-			}
-		
-			fflush(stdout);
-			}
-
-			usleep(10000);
+			perror("\njoystick: error reading");
+			exit (1);
 		}
+		
+		// get current time
+		clock_gettime(CLOCK_REALTIME, timer);
+		prevTime = currTime;
+		currTime = timer->tv_nsec;
+		
+		// if some amount of time has passed, use the current structure
+		// to send commands to the camera/platform
+		if(((unsigned)currTime - (unsigned)prevTime) > 15000){
+			if(controller.buttonA){
+				// Take a picture
+				if(buttonAPressed == 0){
+					printf("Photo Sample");
+					buttonAPressed = 1;
+				}
+			}else
+				buttonAPressed = 0;
+				
+			if(controller.buttonB){
+				// Take an audio sample
+				if(buttonBPressed == 0){
+					printf("Audio Sample");
+					buttonBPressed = 1;
+				}
+			}else
+				buttonBPressed = 0;
+				
+			if(controller.buttonX){
+				// Take an audio sample
+				if(buttonXPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "png00000");
+					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					buttonXPressed = 1;
+				}
+			}else
+				buttonXPressed = 0;
 
-	printf("joystick: unknown mode: %s\n", argv[1]);
-	return -1;
+			if(controller.rightThumbLR > 500){
+				// pan left
+				pan += DELTAPAN;
+				if(pan > MAXPANRIGHT)
+					pan = MAXPANRIGHT;
+				// pan camera
+				//SerialWrite("", 8);
+				printf("Pan: %d", pan);
+				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+			}
+			else if(controller.rightThumbLR < -500){
+				// pan right
+				pan -= DELTAPAN;
+				if(pan < MAXPANLEFT)
+					pan = MAXPANLEFT;
+				// pan camera
+				printf("Pan: %d", pan);
+				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+			}
+			
+			if(controller.rightThumbUD > 500){
+				// tilt down
+				tilt -= DELTATILT;
+				if(tilt < MAXTILTDOWN)
+					tilt = MAXTILTDOWN;
+				// tilt camera
+				printf("Tilt: %d", tilt);
+				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+			}
+			else if(controller.rightThumbUD < -500){
+				// tilt up
+				tilt += DELTATILT;
+				if(tilt > MAXTILTUP)
+					tilt = MAXTILTUP;
+				// tilt camera
+				printf("Tilt: %d", tilt);
+				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+			}
+		}
+			
+		fflush(stdout);
+	}
 }

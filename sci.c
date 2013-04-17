@@ -13,7 +13,7 @@ byte SCIcount;
 
 /* Initialize SCI module */
 void SCIinit(void) {
-    SET_SCI_BAUD(BAUD9600);         // Set baud rate
+    SET_SCI_BAUD(BAUD38400);        // Set baud rate
     CLR_BITS(SCICR1,SCICR1_INIT);   // Set port configuration
     
     SCIflush();
@@ -119,9 +119,11 @@ interrupt VectorNumber_Vsci void SCI_RX_ISR(void) {
     
     // Check error flags before grabbing chars
     if(!(SCISR1 & ( SCISR1_OR | SCISR1_NF | SCISR1_FE | SCISR1_PF ))) {
-        SCIbuf[i] = SCIgetc();  // Store received byte into ring buffer
-        i = (i+1) % SCI_BUFSIZ; // Increment to next index; wrap to beginning if buffer overflows
+        SCIbuf[i] = SCIDRL;//SCIgetc();  // Store received byte into ring buffer
+        i = (unsigned char)((i+1) % SCI_BUFSIZ); // Increment to next index; wrap to beginning if buffer overflows
         if(SCIcount < SCI_BUFSIZ)
             SCIcount++;     // Increment global buffer byte counter
+    } else {
+        (void)SCIDRL; // Clear flags by reading data register
     }
 }

@@ -12,8 +12,7 @@ word timer_overflow_count;
 void timer_init(void) {
     timer_overflow_count = 0;   // Reset overflow counter
     
-    // Currently the timer overflow interrupt occurs too frequently with a prescaler of 8
-    //TOI_ENABLE;                 // Enable TCNT overflow interrupt
+    TOI_ENABLE;                 // Enable TCNT overflow interrupt
     
     SET_TCNT_PRESCALE(TCNT_PRESCALE_8);     // Set timer prescaler
     SET_BITS(TSCR1,TSCR1_INIT);             // Set timer operation modes and enable timer
@@ -41,6 +40,9 @@ void msleep(word ms) {
 
 /* TCNT overflow interrupt handler */
 interrupt VectorNumber_Vtimovf void TCNT_Overflow_ISR(void) {
-    TFLG2 = TFLG2_TOF_MASK;     // Clear timer overflow flag by writing a one to it
+    
+    (void)TCNT;     // Clear timer overflow flag by reading TCNT (fast flag clear enabled)
+    //TFLG2 = TFLG2_TOF_MASK;     // Clear timer overflow flag by writing a one to it
+
     timer_overflow_count++;
 }
