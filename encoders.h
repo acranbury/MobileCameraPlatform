@@ -44,13 +44,13 @@ word encoder_count(byte encoder) {
     switch(encoder) {
     case 1:
         DisableInterrupts;
-          count = encoder1_count
+          count = encoder1_count;
         EnableInterrupts;
         return count;
         break;
     case 2:
         DisableInterrupts;
-          count = encoder2_count
+          count = encoder2_count;
         EnableInterrupts;
         return count;
         break;
