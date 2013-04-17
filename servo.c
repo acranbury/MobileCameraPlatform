@@ -1,8 +1,13 @@
 /* Servo motor functions */
 
+#include <hidef.h>      // required for EnableInterrupts and DisableInterrupts macros
 #include <mc9s12c32.h>
-#include "timer.h"
 #include "servo.h"
+#include "timer.h"
+
+
+// Servo ISR globals for waveform on and off times
+static word servo_on_time, servo_off_time;
 
 
 /* Initialize servo timer channel */
@@ -26,7 +31,7 @@ void servo_init(void) {
 }
 
 /* Set servo arm to angle */
-void servo_angle(byte angle) {
+void servo_set_angle(byte angle) {
     word on_time, off_time;
     
     // Bound to limits

@@ -5,6 +5,7 @@
 #include "utils.h"
 
 
+#define STEPPER_MAX_ANGLE       180             // Maximum angle in degrees (fully right)
 #define STEPPER_DELAY_INIT      5               // Initial step delay in ms
 #define STEPPER_STEP_INIT       HALF_STEP_LEFT  // Initial step type
 #define TC_STEPPER              4               // Timer channel used to control all four stepper coil lines
@@ -22,7 +23,7 @@
 #define STEPPER_COIL1B_MASK     PTT_PTT5_MASK
 #define STEPPER_COIL2A_MASK     PTT_PTT6_MASK
 #define STEPPER_COIL2B_MASK     PTT_PTT7_MASK
-#define STEPPER_COIL_BITS       ( PTT_PTT4_MASK | PTT_PTT5_MASK | PTT_PTT6_MASK | PTT_PTT7_MASK )
+#define STEPPER_COIL_BITS       ( STEPPER_COIL1A_MASK | STEPPER_COIL1B_MASK | STEPPER_COIL2A_MASK | STEPPER_COIL2B_MASK )
 
 // Stepper limit switch ports
 #define STEPPER_LIMIT_PORT      PORTAD0
@@ -43,8 +44,8 @@
 void stepper_init(void);
 void stepper_calibrate(void);
 void stepper_reverse(void);
-void stepper_set_pos(word);
 void stepper_set_delay(byte);
-
+void stepper_set_angle(byte);
+static void stepper_set_pos(word);
 
 #endif // _STEPPER_H

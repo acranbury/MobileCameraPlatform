@@ -1,6 +1,7 @@
 /* Stepper motor functions */
 
 #include <mc9s12c32.h>
+#include "utils.h"
 #include "timer.h"
 #include "stepper.h"
 
@@ -68,8 +69,27 @@ void stepper_reverse(void) {
         stepper_step_type = (char)((stepper_step_type == FULL_STEP_LEFT) ? FULL_STEP_RIGHT : FULL_STEP_LEFT);
 }
 
-/* Move stepper to position */
-void stepper_set_pos(word setpoint) {
+/* Set delay in ms between steps */
+void stepper_set_delay(byte delay) {
+    if(delay <= 524)    // Timer channel is 16bits, delay is multiplied by 125 (1ms count with prescaler of 64)
+        stepper_delay = delay;
+}
+
+/* Move stepper to angle */
+void stepper_set_angle(byte angle) {
+    word position;
+    
+    // Bound to limits
+    if(angle > STEPPER_MAX_ANGLE) angle = STEPPER_MAX_ANGLE;
+    
+    // Calculate absolute position
+    position = (angle * ((stepper_limit * 10) / STEPPER_MAX_ANGLE)) / 10;
+    
+    stepper_set_pos(position);
+}
+
+/* Move stepper to absolute position */
+static void stepper_set_pos(word setpoint) {
     if(setpoint <= stepper_limit && stepper_limit != 0) { // Range is from 0 to stepper_limit (after calibration)
         
         // Check which direction to pan
@@ -81,12 +101,6 @@ void stepper_set_pos(word setpoint) {
         
         stepper_setpoint = setpoint;
     }
-}
-
-/* Set delay in ms between steps */
-void stepper_set_delay(byte delay) {
-    if(delay <= 524)    // Timer channel is 16bits, delay is multiplied by 125 (1ms count with prescaler of 64)
-        stepper_delay = delay;
 }
 
 /*****************************************************************************/
