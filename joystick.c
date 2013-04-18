@@ -12,48 +12,55 @@
 
 #include <linux/joystick.h>
 
-#define NAME_LENGTH 128
+#define NAME_LENGTH 	128
 
-#define HOMETILT	90
-#define HOMEPAN		90
-#define DELTATILT	1
-#define DELTAPAN	1
-#define MAXTILTUP	115
-#define MAXTILTDOWN	0
-#define MAXPANLEFT	0
-#define MAXPANRIGHT	180
-#define THRESHOLD	3000
-#define CMDDELAYLO	50000000
-#define CMDDELAYHI	10000000
+#define HOMETILT		90
+#define HOMEPAN			90
+#define DELTATILT		1
+#define DELTAPAN		1
+#define MAXTILTUP		115
+#define MAXTILTDOWN		0
+#define MAXPANLEFT		0
+#define MAXPANRIGHT		180
+#define CAMTHRESHOLD	3000
+#define TURNTHRESHOLD	5
+#define TRIGTHRESHOLD	-32000
+#define CMDDELAYLO		50000000
+#define CMDDELAYHI		10000000
 
-#define BUFSIZE		8
+// Speed conversion defines
+#define SPEEDMNUM		100
+#define	SPEEDMDEN		65534
 
-#define GAMEPAD		"/dev/input/js0"
-#define WEBCAMIMAGE	"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format png vlc://quit --run-time=1"
-#define WEBCAMAUDIO	"arecord -f cd -d 5 audio.wav"
+#define BUFSIZE			8
+
+// strings
+#define GAMEPAD			"/dev/input/js0"
+#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format png vlc://quit --run-time=1"
+#define WEBCAMAUDIO		"arecord -f cd -d 5 audio.wav"
 
 // Gamepad buttons
-#define BUTTONA		0
-#define BUTTONB		1
-#define BUTTONX		2
-#define BUTTONY		3
-#define BUTTONLB	4
-#define BUTTONRB	5
-#define	BUTTONBACK	6
-#define BUTTONSTART	7
-#define BUTTONLOGI	8
-#define BUTTONLHAT	9
-#define BUTTONRHAT	10
+#define BUTTONA			0
+#define BUTTONB			1
+#define BUTTONX			2
+#define BUTTONY			3
+#define BUTTONLB		4
+#define BUTTONRB		5
+#define	BUTTONBACK		6
+#define BUTTONSTART		7
+#define BUTTONLOGI		8
+#define BUTTONLHAT		9
+#define BUTTONRHAT		10
 
 // Gamepad axes
-#define	AXISLTLR	0
-#define AXISLTUD	1
-#define AXISLTRIG	2
-#define AXISRTLR	3
-#define AXISRTUD	4
-#define AXISRTRIG	5
-#define AXISDPADLR	6
-#define AXISDPADUD	7
+#define	AXISLTLR		0
+#define AXISLTUD		1
+#define AXISLTRIG		2
+#define AXISRTLR		3
+#define AXISRTUD		4
+#define AXISRTRIG		5
+#define AXISDPADLR		6
+#define AXISDPADUD		7
 
 void CaptureAudio(void);
 void CaptureImage(void);
@@ -70,6 +77,7 @@ int main (int argc, char **argv)
 	struct timespec prevTime, currTime;
 	clockid_t clock;
 	int cmdDelay = CMDDELAYHI;
+	int leftMotor, rightMotor, speed;
 	
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
@@ -100,7 +108,6 @@ int main (int argc, char **argv)
 	// open and initialize the serial port
 	SerialOpen();
 	SerialInit();
-	//SerialWrite(buffer,10);
 
 	// open the gamepad port in nonblocking mode
 	fcntl(fd, F_SETFL, O_NONBLOCK);
@@ -146,6 +153,7 @@ int main (int argc, char **argv)
 		// to send commands to the camera/platform
 		if(!(((unsigned)currTime.tv_nsec - (unsigned)prevTime.tv_nsec) < cmdDelay)){
 			
+// *********************** A Button ************************************
 			if(button[BUTTONA]){
 				// Take a picture
 				if(buttonAPressed == 0){
@@ -156,6 +164,7 @@ int main (int argc, char **argv)
 			}else
 				buttonAPressed = 0;
 				
+// ************************ B Button ***********************************
 			if(button[BUTTONB]){
 				// Take an audio sample
 				if(buttonBPressed == 0){
@@ -166,6 +175,7 @@ int main (int argc, char **argv)
 			}else
 				buttonBPressed = 0;
 				
+// *********************** X Button ************************************
 			if(button[BUTTONX]){
 				// Take an audio sample
 				if(buttonXPressed == 0){
@@ -178,6 +188,7 @@ int main (int argc, char **argv)
 			}else
 				buttonXPressed = 0;
 				
+// ********************* Y Button **************************************
 			if(button[BUTTONY]){
 				// Take an audio sample
 				if(buttonYPressed == 0){
@@ -190,6 +201,7 @@ int main (int argc, char **argv)
 			}else
 				buttonYPressed = 0;
 				
+// ****************** Left Button **************************************
 			if(button[BUTTONLB]){
 				// toggle command delay
 				if(buttonLBPressed == 0){
@@ -202,6 +214,7 @@ int main (int argc, char **argv)
 			}else
 				buttonLBPressed = 0;
 				
+// ********************** Start Button *********************************
 			if(button[BUTTONSTART]){
 				// toggle command delay
 				if(buttonSTARTPressed == 0){
@@ -214,7 +227,8 @@ int main (int argc, char **argv)
 			}else
 				buttonSTARTPressed = 0;
 
-			if(axis[AXISRTLR] > THRESHOLD){
+// ********************* Right Thumbstick ******************************
+			if(axis[AXISRTLR] > CAMTHRESHOLD){
 				// pan left
 				pan += DELTAPAN;
 				if(pan > MAXPANRIGHT)
@@ -222,8 +236,7 @@ int main (int argc, char **argv)
 				// pan camera
 				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
-			}
-			else if(axis[AXISRTLR] < -THRESHOLD){
+			}else if(axis[AXISRTLR] < -CAMTHRESHOLD){
 				// pan right
 				pan -= DELTAPAN;
 				if(pan < MAXPANLEFT)
@@ -233,7 +246,7 @@ int main (int argc, char **argv)
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			
-			if(axis[AXISRTUD] > THRESHOLD){
+			if(axis[AXISRTUD] > CAMTHRESHOLD){
 				// tilt down
 				tilt -= DELTATILT;
 				if(tilt < MAXTILTDOWN)
@@ -241,8 +254,7 @@ int main (int argc, char **argv)
 				// tilt camera
 				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
-			}
-			else if(axis[AXISRTUD] < -THRESHOLD){
+			}else if(axis[AXISRTUD] < -CAMTHRESHOLD){
 				// tilt up
 				tilt += DELTATILT;
 				if(tilt > MAXTILTUP)
@@ -252,6 +264,45 @@ int main (int argc, char **argv)
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			
+// ************************ Speed Updates ******************************
+			// convert trigger values into speed
+			speed = (SPEEDMNUM * (axis[AXISRTRIG] - axis[AXISLTRIG])) / SPEEDMDEN;
+			
+			// turn left
+			if(axis[AXISLTLR] < -TURNTHRESHOLD){
+				leftMotor = speed * (100 + ((SPEEDMNUM * axis[AXISLTLR]) / 32767)) / 100;
+				rightMotor = speed;
+			// turn right
+			}else if(axis[AXISLTLR] > TURNTHRESHOLD){
+				rightMotor = speed * (100 - ((SPEEDMNUM * axis[AXISLTLR]) / 32767)) / 100;
+				leftMotor = speed;
+			// go straight
+			}else{
+				rightMotor = speed;
+				leftMotor = speed;
+			}
+			
+			// check D-Pad for spin
+			// spin left
+			if(axis[AXISDPADLR] < 0){
+				leftMotor = -speed;
+				rightMotor = speed;
+			// spin right
+			}else if(axis[AXISDPADLR] > 0){
+				leftMotor = speed;
+				rightMotor = -speed;
+			}
+				
+			// send commands to drive both motors
+			// left motor
+			snprintf(buffer, BUFSIZE+1, "mov0%4d", leftMotor);
+			SerialWrite((unsigned char *)buffer,BUFSIZE);
+			printf("%s ", buffer);
+			// right motor
+			snprintf(buffer, BUFSIZE+1, "mov1%4d", rightMotor);
+			SerialWrite((unsigned char *)buffer,BUFSIZE);
+			printf("%s\n", buffer);
+
 			// get the current time and put it in prevTime
 			clock_gettime(clock, &prevTime);
 		}
