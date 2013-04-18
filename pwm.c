@@ -5,6 +5,9 @@
 #include "utils.h"
 #include "pwm.h"
 
+#define MOTOR1_PWM      4
+#define MOTOR2_PWM      5
+
 
 /* Initialize PWM module */
 void PWMinit(void) {
@@ -15,3 +18,4 @@ void PWMinit(void) {
     PWM_SA_SCALE(1);    // clock SA = clock A / 2
     PWM_SB_SCALE(1);    // clock SB = clock B / 2
 }
+

@@ -99,9 +99,6 @@ byte LCDgetc(void);
 byte LCDaddress(void);
 byte LCDbusy(void);
 
-static void LCDcmd(byte);
-static void LCDdata(byte);
-static void LCDcgen(byte, byte *);
 
 
 #endif // _LCD_H

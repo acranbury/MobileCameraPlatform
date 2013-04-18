@@ -9,6 +9,7 @@
 #include "sci.h"
 #include "servo.h"
 #include "stepper.h"
+#include "motors.h"
 #include "encoders.h"
 
 
@@ -20,6 +21,7 @@
 #define TLT         5
 #define HOM         6
 #define CAL         7
+#define MOV         8
 
 
 void cmdparser(char *);
@@ -150,6 +152,17 @@ void cmdparser(char *buffer) {
             numchars += 8;
             break;
         
+          case MOV:
+            SCIprintf("mov%d", numcmd);
+            
+            LCDprintf("Moving motors");
+            
+            motor_set_speed(buffer[numchars +3], (char) (atoi(&buffer[numchars + 4])));
+            
+            numcmd++;
+            numchars += 8;
+            break;
+            
         /*
         case TXT:  // Print to LCD.
             SCIprintf("txt%d",numcmd);
@@ -186,7 +199,9 @@ int cmdconv(char *cmd) {
     else if(!(strcmp(cmd, "hom")))
         return HOM;
     else if(!(strcmp(cmd, "cal")))
-        return CAL;
+        return CAL;    
+    else if(!(strcmp(cmd, "mov")))
+        return MOV;
     else
         return 0;
 }

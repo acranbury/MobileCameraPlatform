@@ -66,6 +66,9 @@
 /*****************************************************************************/
 
 void PWMinit(void);
+void motor_init(void);
+void motor_set_period(byte, byte);
+void motor_set_duty(byte, byte);
 
 
 #endif // _PWM_H

@@ -5,6 +5,7 @@
 #include "servo.h"
 #include "timer.h"
 
+static void servo_set_times(word on_time, word off_time);
 
 // Servo ISR globals for waveform on and off times
 static word servo_on_time, servo_off_time;

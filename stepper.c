@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "stepper.h"
 
+static void stepper_set_pos(word setpoint);
 
 // Bit patterns for stepper motor
 static byte const STEPPER_PATTERN[] = { 0x8, 0xA, 0x2, 0x6, 0x4, 0x5, 0x1, 0x9 };
