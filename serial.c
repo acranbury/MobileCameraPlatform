@@ -13,6 +13,7 @@ struct termios options;	// structure of terminal options
 // initialize the serial port
 void SerialInit(void){
 	if(fd > 0){
+		printf("Setting serial port %s to 38400 baud, 8N1, no flow control\n", SERIALPORT);
 		// get current options for the port
 		tcgetattr(fd, &options);
 		
@@ -61,8 +62,10 @@ int SerialOpen(void){
 		// could not open the port
 		printf("Could not open serial communications - %s Error number: %d\n", SERIALPORT,errno);
 	}
-	else
+	else{
 		fcntl(fd,F_SETFL, 0);
+		printf("Opened serial port %s\n", SERIALPORT);
+	}
 
 	return(fd);
 }

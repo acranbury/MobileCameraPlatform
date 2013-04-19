@@ -18,14 +18,19 @@
 #define HOMEPAN		90
 #define DELTATILT	1
 #define DELTAPAN	1
-#define MAXTILTUP	120
+#define MAXTILTUP	115
 #define MAXTILTDOWN	0
 #define MAXPANLEFT	0
 #define MAXPANRIGHT	180
+#define THRESHOLD	3000
+#define CMDDELAYLO	50000000
+#define CMDDELAYHI	10000000
 
 #define BUFSIZE		8
 
 #define GAMEPAD		"/dev/input/js0"
+#define WEBCAMIMAGE	"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format png vlc://quit --run-time=1"
+#define WEBCAMAUDIO	"arecord -f cd -d 5 audio.wav"
 
 // Gamepad buttons
 #define BUTTONA		0
@@ -50,10 +55,8 @@
 #define AXISDPADLR	6
 #define AXISDPADUD	7
 
-// structure for gamepad
-struct gamepad{
-	int buttonA,buttonB,buttonX,rightThumbUD,rightThumbLR;
-}controller;
+void CaptureAudio(void);
+void CaptureImage(void);
 
 int main (int argc, char **argv)
 {
@@ -63,11 +66,13 @@ int main (int argc, char **argv)
 	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0;
-	struct timespec *timer;
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, buttonLBPressed = 0, buttonSTARTPressed = 0;
+	struct timespec prevTime, currTime;
+	clockid_t clock;
+	int cmdDelay = CMDDELAYHI;
+	
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
-	long currTime, prevTime;
 	int version = 0x000800;
 	char name[NAME_LENGTH] = "Unknown";
 	
@@ -87,12 +92,10 @@ int main (int argc, char **argv)
 
 	printf("Joystick (%s) has %d axes and %d buttons. Driver version is %d.%d.%d.\n",
 		name, axes, buttons, version >> 16, (version >> 8) & 0xff, version & 0xff);
-	printf("Testing ... (interrupt to exit)\n");
 
 	// allocate memory for structures
 	axis = calloc(axes, sizeof(int));
 	button = calloc(buttons, sizeof(char));
-	timer = calloc(1, sizeof(struct timespec));
 
 	// open and initialize the serial port
 	SerialOpen();
@@ -102,10 +105,19 @@ int main (int argc, char **argv)
 	// open the gamepad port in nonblocking mode
 	fcntl(fd, F_SETFL, O_NONBLOCK);
 
-	// get current time
-	clock_gettime(CLOCK_REALTIME, timer);
-	currTime = timer->tv_nsec;
+	printf("Running ... (interrupt to exit)\n");
+	
+	// get process clock timer
+	clock_getcpuclockid(0, &clock);
+	// get current time and set prevTime
+	clock_gettime(clock, &prevTime);
 
+	// main loop
+	// does a nonblocking read of the gamepad
+	// if we get an event, fill out the structures
+	// checks the timer
+	// if time is right
+	// send commands to platform
 	while (1) {
 		
 		// do a read of the gamepad port
@@ -120,100 +132,140 @@ int main (int argc, char **argv)
 				axis[js.number] = js.value;
 				break;
 			}	
-
-			// fill out the structure
-			controller.buttonA = button[BUTTONA];
-			controller.buttonB = button[BUTTONB];
-			controller.buttonX = button[BUTTONX];
-			controller.rightThumbLR = axis[AXISRTLR];
-			controller.rightThumbUD = axis[AXISRTUD];
-
-		}else
-			if (errno != EAGAIN) {
+		// didn't get an event, check the error to make sure nothing went wrong
+		}else if (errno != EAGAIN) { 
 			perror("\njoystick: error reading");
 			exit (1);
 		}
 		
 		// get current time
-		clock_gettime(CLOCK_REALTIME, timer);
-		prevTime = currTime;
-		currTime = timer->tv_nsec;
+		//clock_getcpuclockid(0, &clock);
+		clock_gettime(clock, &currTime);
 		
 		// if some amount of time has passed, use the current structure
 		// to send commands to the camera/platform
-		if(((unsigned)currTime - (unsigned)prevTime) > 15000){
-			if(controller.buttonA){
+		if(!(((unsigned)currTime.tv_nsec - (unsigned)prevTime.tv_nsec) < cmdDelay)){
+			
+			if(button[BUTTONA]){
 				// Take a picture
 				if(buttonAPressed == 0){
 					printf("Photo Sample");
+					CaptureImage();
 					buttonAPressed = 1;
 				}
 			}else
 				buttonAPressed = 0;
 				
-			if(controller.buttonB){
+			if(button[BUTTONB]){
 				// Take an audio sample
 				if(buttonBPressed == 0){
 					printf("Audio Sample");
+					CaptureAudio();
 					buttonBPressed = 1;
 				}
 			}else
 				buttonBPressed = 0;
 				
-			if(controller.buttonX){
+			if(button[BUTTONX]){
 				// Take an audio sample
 				if(buttonXPressed == 0){
 					snprintf(buffer, BUFSIZE+1, "png00000");
 					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					tilt = HOMETILT;
+					pan = HOMEPAN;
 					buttonXPressed = 1;
 				}
 			}else
 				buttonXPressed = 0;
+				
+			if(button[BUTTONY]){
+				// Take an audio sample
+				if(buttonYPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "hom00000");
+					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					buttonYPressed = 1;
+					tilt = HOMETILT;
+					pan = HOMEPAN;
+				}
+			}else
+				buttonYPressed = 0;
+				
+			if(button[BUTTONLB]){
+				// toggle command delay
+				if(buttonLBPressed == 0){
+					if(cmdDelay == CMDDELAYHI)
+						cmdDelay = CMDDELAYLO;
+					else
+						cmdDelay = CMDDELAYHI;
+					buttonLBPressed = 1;
+				}
+			}else
+				buttonLBPressed = 0;
+				
+			if(button[BUTTONSTART]){
+				// toggle command delay
+				if(buttonSTARTPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "cal00000");
+					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					buttonSTARTPressed = 1;
+					tilt = HOMETILT;
+					pan = HOMEPAN;
+				}
+			}else
+				buttonSTARTPressed = 0;
 
-			if(controller.rightThumbLR > 500){
+			if(axis[AXISRTLR] > THRESHOLD){
 				// pan left
 				pan += DELTAPAN;
 				if(pan > MAXPANRIGHT)
 					pan = MAXPANRIGHT;
 				// pan camera
-				//SerialWrite("", 8);
-				printf("Pan: %d", pan);
 				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
-			else if(controller.rightThumbLR < -500){
+			else if(axis[AXISRTLR] < -THRESHOLD){
 				// pan right
 				pan -= DELTAPAN;
 				if(pan < MAXPANLEFT)
 					pan = MAXPANLEFT;
 				// pan camera
-				printf("Pan: %d", pan);
 				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
 			
-			if(controller.rightThumbUD > 500){
+			if(axis[AXISRTUD] > THRESHOLD){
 				// tilt down
 				tilt -= DELTATILT;
 				if(tilt < MAXTILTDOWN)
 					tilt = MAXTILTDOWN;
 				// tilt camera
-				printf("Tilt: %d", tilt);
 				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
-			else if(controller.rightThumbUD < -500){
+			else if(axis[AXISRTUD] < -THRESHOLD){
 				// tilt up
 				tilt += DELTATILT;
 				if(tilt > MAXTILTUP)
 					tilt = MAXTILTUP;
 				// tilt camera
-				printf("Tilt: %d", tilt);
 				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
+			
+			// get the current time and put it in prevTime
+			clock_gettime(clock, &prevTime);
 		}
 			
 		fflush(stdout);
 	}
+}
+
+// calls "arecord -f cd -d 5 audio.wav"
+void CaptureAudio(void){
+	system(WEBCAMAUDIO);
+}
+
+// calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path /home/stoppal/test --scene-prefix image_prefix --scene-format png vlc://quit --run-time=1"
+void CaptureImage(void){
+	system(WEBCAMIMAGE);
 }
