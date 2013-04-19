@@ -39,7 +39,14 @@ void stepper_init(void) {
 
 /* Calibrate stepper motor limits */
 void stepper_calibrate(void) {
-    static byte stepper_calibrated_left = 0;
+    byte stepper_calibrated_left;
+    
+    // Reset flags to re-calibrate
+    stepper_calibrated = 0;
+    stepper_calibrated_left = 0;
+    
+    // Force direction to the left (expecting to hit left limit first)
+    stepper_step_type = HALF_STEP_LEFT;
     
     // Check if stepper limits have been found
     while(!(stepper_calibrated)) {
