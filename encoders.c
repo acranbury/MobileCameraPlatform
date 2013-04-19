@@ -6,6 +6,8 @@
 #include "timer.h"
 #include "encoders.h"
 
+#define MAX16BITS   0xFFFF
+
 static long encoder1_period;
 static long encoder2_period;
 static word encoder1_count; 
@@ -61,9 +63,13 @@ long encoder_period(byte encoder) {
     switch(encoder) {
     case 1:
         count = encoder1_period;
+        count += get_overflow_count() * (MAX16BITS); 
+        reset_overflow_count();
         break;
     case 2:
         count = encoder2_period;
+        count += get_overflow_count() * (MAX16BITS); 
+        reset_overflow_count();
         break;
     default:
         count = 0;

@@ -9,7 +9,7 @@
 /* Control Law defines*/
                     
 // Default gain values
-#define P_GAIN_DEF  300
+#define P_GAIN_DEF  600
 #define I_GAIN_DEF  100 
 
 // Minimum and Maximum drive values for PWM for motors to actuallly move.
@@ -46,6 +46,8 @@
 
 // Limits for error that remain in the range of reality.
 #define MAX_SPEED_ERROR   MAXDRIVE - MINDRIVE
+#define SPEED_SET_SCALE  100                      // Used to adjust speed setpoint.
+
 
 static long set_point_1 = 0;                       // Current setpoint, 0% - 100%
 static long set_point_2 = 0; 
@@ -157,10 +159,10 @@ void motor_set_direction(byte motor, byte direction) {
 void motor_set_speed(byte motor, char speed) {
     switch(motor) {
     case MOTOR1C:
-        set_point_1 = speed;     // Set the setpoint of the left motor.
+        set_point_1 = ((speed * (MAXDRIVE - MINDRIVE)) / SPEED_SET_SCALE) + MINDRIVE;     // Set the setpoint of the left motor.
         break;
     case MOTOR2C:
-        set_point_2 = speed;     // Set the setpoint of the right motor.
+        set_point_2 = ((speed * (MAXDRIVE - MINDRIVE)) / SPEED_SET_SCALE) + MINDRIVE;     // Set the setpoint of the right motor.
         break;
     default:
         break;
@@ -172,9 +174,9 @@ interrupt VECTOR_NUM(TC_VECTOR(TC_MOTOR)) void control_law_ISR(void) {
     static long integral_error_1 = 0, integral_error_2 = 0;
     static int last_cntl_out_1 = 0, last_cntl_out_2 = 0;
     
-    long speed_error_1, speed_error_2;
-    long read_period_1, read_period_2;
-    char drive_value = 0;
+    long speed_error_1 = 0, speed_error_2 = 0;
+    long read_period_1 = 0, read_period_2 = 0;
+    char drive_value_1 = 0, drive_value_2 = 0;
     
     // Calculate error.     
     read_period_1 = ((DRIVE_SCALE_VAL/encoder_period(1)) + (BVALUE)); 
@@ -189,21 +191,21 @@ interrupt VECTOR_NUM(TC_VECTOR(TC_MOTOR)) void control_law_ISR(void) {
     // Check that error is in a realistic range.    
     if ((speed_error_1 < MAX_SPEED_ERROR) && (speed_error_1 > -MAX_SPEED_ERROR)) {  
         // Check if integration needs to be performed (not at rails). 
-        if ((PWM_DTY(MOTOR1_PWM) > MINDRIVE) && (PWM_DTY(MOTOR1_PWM) > MINDRIVE))
+        if ((PWM_DTY(MOTOR1_PWM) > MINDRIVE) && (PWM_DTY(MOTOR1_PWM) < MAXDRIVE))
           integral_error_1 += speed_error_1; 
         
         // Perform control law calculations
-        drive_value = ((speed_error_1 * P_GAIN) + (integral_error_1 * I_GAIN))/GAIN_DIV;
+        drive_value_1 = (((speed_error_1 * P_GAIN) + (integral_error_1 * I_GAIN))/GAIN_DIV) + MINDRIVE;
         
-        if (drive_value > MAXDRIVE)
-          drive_value = MAXDRIVE;
-        else if (drive_value > MINDRIVE)
-          drive_value = MINDRIVE;
+        if (drive_value_1 > MAXDRIVE)
+          drive_value_1 = MAXDRIVE;
+        else if (drive_value_1 < MINDRIVE)
+          drive_value_1 = MINDRIVE;
         
         // Save last drive value.
-        last_cntl_out_1 = (drive_value);
+        last_cntl_out_1 = (drive_value_1);
         // Write new drive value to PWM hardware.
-        PWM_DTY(MOTOR1_PWM) = drive_value;
+        PWM_DTY(MOTOR1_PWM) = drive_value_1;
     }
     
     // Check that error is in a realistic range.    
@@ -213,17 +215,17 @@ interrupt VECTOR_NUM(TC_VECTOR(TC_MOTOR)) void control_law_ISR(void) {
           integral_error_2 += speed_error_2; 
         
         // Perform control law calculations
-        drive_value = ((speed_error_2 * P_GAIN) + (integral_error_2 * I_GAIN))/GAIN_DIV;
+        drive_value_2 = (((speed_error_2 * P_GAIN) + (integral_error_2 * I_GAIN))/GAIN_DIV) + MINDRIVE;
         
-        if (drive_value > MAXDRIVE)
-          drive_value = MAXDRIVE;
-        else if (drive_value > MINDRIVE)
-          drive_value = MINDRIVE;
+        if (drive_value_2 > MAXDRIVE)
+          drive_value_2 = MAXDRIVE;
+        else if (drive_value_2 < MINDRIVE)
+          drive_value_2 = MINDRIVE;
         
         // Save last drive value.
-        last_cntl_out_2 = (drive_value);
+        last_cntl_out_2 = (drive_value_2);
         // Write new drive value to PWM hardware.
-        PWM_DTY(MOTOR1_PWM) = drive_value;
+        PWM_DTY(MOTOR1_PWM) = drive_value_2;
     }
     
     
