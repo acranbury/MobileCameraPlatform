@@ -12,7 +12,6 @@
 #include "motors.h"
 #include "encoders.h"
 
-
 #define CMD_LEN     3   // command size
 #define PNG         1
 #define ABT         2
@@ -23,11 +22,10 @@
 #define CAL         7
 #define MOV         8
 
-
 void cmdparser(char *);
 int cmdconv(char *);
 void seekcmd(char *, int *);
-
+ 
 /*****************************************************************************/
 
 #pragma MESSAGE DISABLE C1420   // Disable "Function call result ignored" warning (for memset)
@@ -40,7 +38,7 @@ void main(void) {
     servo_init();
     stepper_init();
     encoder_init();
-    
+    motor_init();
     msleep(16);
     LCDinit();
     
@@ -53,10 +51,14 @@ void main(void) {
     LCDputs("Ready.");
     SCIputs("HCS12 ready to go!");
     
+    motor_set_speed('0', 0);
+    motor_set_speed('1', 0);
+    
     for(;;) {
         SCIdequeue(buffer);
         cmdparser(buffer);
         memset(buffer, 0, SCI_BUFSIZ+1);
+        
     } /* loop forever */
 }
 
@@ -154,10 +156,8 @@ void cmdparser(char *buffer) {
         
           case MOV:
             SCIprintf("mov%d", numcmd);
-            
-            LCDprintf("Moving motors");
-            
-            motor_set_speed(buffer[numchars +3], (char) (atoi(&buffer[numchars + 4])));
+            LCDprintf("Motor %c: %3d\n", buffer[numchars+3], atoi(&buffer[numchars + 4]));
+            motor_set_speed(buffer[numchars+3], (char)(atoi(&buffer[numchars + 4])));
             
             numcmd++;
             numchars += 8;

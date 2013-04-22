@@ -53,7 +53,9 @@ void motor_init(void);
 void motor_set_direction(byte, byte);
 void motor_set_speed(byte motor, char speed);
 
-void motor_set_period(byte, byte);  // static void motor_set_period(byte, byte);
-void motor_set_duty(byte, byte);    // static void motor_set_duty(byte, byte);
+static void motor_set_period(byte, byte);
+static void motor_set_duty(byte, byte);
+
+int abs(int);
 
 #endif // _MOTORS_H

@@ -51,6 +51,7 @@ word encoder_count(byte encoder) {
         return count;
         break;
     default:
+        // Incorrect encoder selection
         return 0;
         break;
     }
@@ -63,12 +64,12 @@ long encoder_period(byte encoder) {
     switch(encoder) {
     case 1:
         count = encoder1_period;
-        count += get_overflow_count() * (MAX16BITS); 
+        count += get_overflow_count() * MAX16BITS; 
         reset_overflow_count();
         break;
     case 2:
         count = encoder2_period;
-        count += get_overflow_count() * (MAX16BITS); 
+        count += get_overflow_count() * MAX16BITS; 
         reset_overflow_count();
         break;
     default:
@@ -82,20 +83,22 @@ long encoder_period(byte encoder) {
 
 /* Encoder 1 interrupt handler */
 interrupt VECTOR_NUM(TC_VECTOR(TC_ENC1)) void Enc1_ISR(void) {
-    static last_count_1 = 0;
-    static cur_count_1 = 0;
-    cur_count_1 = TC(TC_ENC1);  // Acknowledge interrupt by accessing timer channel
-    encoder1_period = cur_count_1 - last_count_1;
+    static last_count = 0;
+    static cur_count = 0;
+    
+    cur_count = TC(TC_ENC1);    // Acknowledge interrupt by accessing timer channel
+    encoder1_period = cur_count - last_count;
     encoder1_count++;
-    last_count_1 = cur_count_1;
+    last_count = cur_count;
 }
 
 /* Encoder 2 interrupt handler */
 interrupt VECTOR_NUM(TC_VECTOR(TC_ENC2)) void Enc2_ISR(void) {      
-    static last_count_2 = 0;
-    static cur_count_2 = 0;
-    cur_count_2 = TC(TC_ENC2);  // Acknowledge interrupt by accessing timer channel
-    encoder2_period = cur_count_2 - last_count_2;
+    static last_count = 0;
+    static cur_count = 0;
+    
+    cur_count = TC(TC_ENC2);    // Acknowledge interrupt by accessing timer channel
+    encoder2_period = cur_count - last_count;
     encoder2_count++;
-    last_count_2 = cur_count_2;
+    last_count = cur_count;
 }
