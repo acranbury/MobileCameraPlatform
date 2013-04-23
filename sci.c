@@ -42,7 +42,7 @@ void SCIdequeue(char *buf){
         for (bytenum=0; bytenum < SCI_CMDSIZ; bytenum++) {
         DisableInterrupts;
           *buf++ = SCIbuf[i];       // Fill buffer with bytes from SCI buffer
-          SCIbuf[i] = '\0';         // Append trailing null
+          SCIbuf[i] = '\0';
           i = (i+1) % SCI_BUFSIZ;   // Increment to next index; wrap to beginning if buffer overflows
           SCIcount--;       // Decrement global buffer byte counter
         EnableInterrupts;
@@ -119,7 +119,7 @@ interrupt VectorNumber_Vsci void SCI_RX_ISR(void) {
     
     // Check error flags before grabbing chars
     if(!(SCISR1 & ( SCISR1_OR | SCISR1_NF | SCISR1_FE | SCISR1_PF ))) {
-        SCIbuf[i] = SCIDRL;//SCIgetc();  // Store received byte into ring buffer
+        SCIbuf[i] = SCIDRL;     // Store received byte into ring buffer
         i = (unsigned char)((i+1) % SCI_BUFSIZ); // Increment to next index; wrap to beginning if buffer overflows
         if(SCIcount < SCI_BUFSIZ)
             SCIcount++;     // Increment global buffer byte counter

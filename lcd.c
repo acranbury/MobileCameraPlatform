@@ -9,6 +9,10 @@
 #include "lcd.h"
 
 
+static void LCDcmd(byte cmd);
+static void LCDdata(byte data);
+static void LCDcgen(byte cnum, byte *line_data);
+
 /* Initialize LCD */
 /* Wait at least 15ms after power-on */
 void LCDinit(void) {

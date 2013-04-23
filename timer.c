@@ -6,16 +6,26 @@
 
 
 // Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
-word timer_overflow_count;
+static word timer_overflow_count;
 
 /* Initialize timer module */
 void timer_init(void) {
     timer_overflow_count = 0;   // Reset overflow counter
     
-    TOI_ENABLE;                 // Enable TCNT overflow interrupt
+    //TOI_ENABLE;                 // Enable TCNT overflow interrupt
     
     SET_TCNT_PRESCALE(TCNT_PRESCALE_8);     // Set timer prescaler
     SET_BITS(TSCR1,TSCR1_INIT);             // Set timer operation modes and enable timer
+}
+
+/* Current timer overflow count */
+word get_overflow_count(void) {
+    return timer_overflow_count;
+}
+
+/* Reset timer overflow count */
+void reset_overflow_count(void) {
+    timer_overflow_count = 0;
 }
 
 /*      Milisecond sleep timer       */

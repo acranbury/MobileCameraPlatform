@@ -26,6 +26,10 @@
 #define MOTOR1          1
 #define MOTOR2          2
 
+// Motor number chars
+#define MOTOR1C        '0'
+#define MOTOR2C        '1'
+
 // Motor PWM channels
 #define MOTOR1_PWM      4
 #define MOTOR2_PWM      5
@@ -34,13 +38,24 @@
 #define MOTOR_FW        0
 #define MOTOR_RV        1
 
+// Motor Control Law Timer channel
+#define TC_MOTOR        5
+
+// Motor default period
+#define MOTOR_PER_DEF   100   // 0 - 100%.
+
+// Motor default control law delta.
+#define MOTOR_CNTL_LAW_DELTA    30000       // Time in micro seconds between each run of the control law. 
+
 /*****************************************************************************/
 
 void motor_init(void);
 void motor_set_direction(byte, byte);
-void motor_set_speed(byte, byte);
+void motor_set_speed(byte motor, char speed);
 
-void motor_set_period(byte, byte);  // static void motor_set_period(byte, byte);
-void motor_set_duty(byte, byte);    // static void motor_set_duty(byte, byte);
+static void motor_set_period(byte, byte);
+static void motor_set_duty(byte, byte);
+
+int abs(int);
 
 #endif // _MOTORS_H

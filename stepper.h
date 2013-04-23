@@ -44,8 +44,8 @@
 void stepper_init(void);
 void stepper_calibrate(void);
 void stepper_reverse(void);
-void stepper_set_delay(byte);
-void stepper_set_angle(byte);
+void stepper_set_delay(byte delay);
+void stepper_set_angle(byte angle);
 static void stepper_set_pos(word);
 
 #endif // _STEPPER_H
