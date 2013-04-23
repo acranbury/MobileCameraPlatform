@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 #include "serial.h"
 
 #include <linux/joystick.h>
@@ -27,6 +28,8 @@
 #define TRIGTHRESHOLD	-32000
 #define CMDDELAYLO		50000000
 #define CMDDELAYHI		10000000
+
+#define MONITORTIMEOUT	1000000000
 
 // Speed conversion defines
 #define SPEEDMNUM		100
@@ -65,6 +68,8 @@
 void CaptureAudio(void);
 void CaptureImage(void);
 
+void *MonitorPlatform(void *arg);
+
 int main (int argc, char **argv)
 {
 	
@@ -74,10 +79,15 @@ int main (int argc, char **argv)
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
 	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, buttonLBPressed = 0, buttonSTARTPressed = 0;
+	
 	struct timespec prevTime, currTime;
 	clockid_t clock;
+	
 	int cmdDelay = CMDDELAYHI;
-	int leftMotor, rightMotor, speed;
+	int leftMotor, rightMotor, speed, oldLeft = 0, oldRight = 0;
+	
+	pthread_t monitorThread;
+	pthread_attr_t attr;
 	
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
@@ -88,7 +98,7 @@ int main (int argc, char **argv)
 
 	// open the gamepad port
 	if ((fd = open(GAMEPAD, O_RDONLY)) < 0) {
-		perror("joystick");
+		perror("Failed opening gamepad port!");
 		exit(1);
 	}
 
@@ -113,6 +123,16 @@ int main (int argc, char **argv)
 	fcntl(fd, F_SETFL, O_NONBLOCK);
 
 	printf("Running ... (interrupt to exit)\n");
+	
+	// initialize and set the thread attributes
+ 	pthread_attr_init( &attr );
+ 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
+ 	pthread_attr_setscope( &attr, PTHREAD_SCOPE_SYSTEM );
+ 	
+ 	if(pthread_create(&monitorThread, &attr, MonitorPlatform, NULL) != 0){
+		printf("Error creating monitor thread!\n Exiting...\n");
+		exit(11);
+	}
 	
 	// get process clock timer
 	clock_getcpuclockid(0, &clock);
@@ -152,6 +172,11 @@ int main (int argc, char **argv)
 		// if some amount of time has passed, use the current structure
 		// to send commands to the camera/platform
 		if(!(((unsigned)currTime.tv_nsec - (unsigned)prevTime.tv_nsec) < cmdDelay)){
+			
+			// do a ping every time we send commands, so we can check to see if 
+			// the platform is responding
+			snprintf(buffer, BUFSIZE+1, "png00000");
+			SerialWrite((unsigned char *)buffer, BUFSIZE);
 			
 // *********************** A Button ************************************
 			if(button[BUTTONA]){
@@ -293,15 +318,22 @@ int main (int argc, char **argv)
 				rightMotor = -speed;
 			}
 				
-			// send commands to drive both motors
-			// left motor
-			snprintf(buffer, BUFSIZE+1, "mov0%4d", leftMotor);
-			SerialWrite((unsigned char *)buffer,BUFSIZE);
-			printf("%s ", buffer);
-			// right motor
-			snprintf(buffer, BUFSIZE+1, "mov1%4d", rightMotor);
-			SerialWrite((unsigned char *)buffer,BUFSIZE);
-			printf("%s\n", buffer);
+			// only send drive commands if the motor speed has changed
+			if(leftMotor != oldLeft){
+				// send commands to drive both motors
+				// left motor
+				snprintf(buffer, BUFSIZE+1, "mov0%4d", leftMotor);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+				oldLeft = leftMotor;
+				//printf("%s\n", buffer);
+			}
+			if(rightMotor != oldRight){
+				// right motor
+				snprintf(buffer, BUFSIZE+1, "mov1%4d", rightMotor);
+				SerialWrite((unsigned char *)buffer,BUFSIZE);
+				oldRight = rightMotor;
+				//printf("%s\n", buffer);
+			}
 
 			// get the current time and put it in prevTime
 			clock_gettime(clock, &prevTime);
@@ -319,4 +351,32 @@ void CaptureAudio(void){
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path /home/stoppal/test --scene-prefix image_prefix --scene-format png vlc://quit --run-time=1"
 void CaptureImage(void){
 	system(WEBCAMIMAGE);
+}
+
+// monitors the serial connection for platform response
+void * MonitorPlatform(void *arg){
+	unsigned char * monitorBuffer;
+	struct timespec monitorPrevTime, monitorCurrTime;
+	clockid_t monitorClock;
+	
+	// get process clock timer
+	clock_getcpuclockid(0, &monitorClock);
+	// get current time and set prevTime
+	clock_gettime(monitorClock, &monitorPrevTime);
+	
+	
+	while(1){
+		SerialRead(monitorBuffer, 8);
+		
+		printf("%s\n", monitorBuffer);
+		
+		// get the current time
+		clock_gettime(monitorClock, &monitorCurrTime);
+		
+		if(((unsigned)monitorCurrTime.tv_nsec - (unsigned)monitorPrevTime.tv_nsec) > MONITORTIMEOUT){
+			printf("Large delay between pings detected - Platform error!\n");
+		}
+	}
+	
+	pthread_exit(NULL);
 }
