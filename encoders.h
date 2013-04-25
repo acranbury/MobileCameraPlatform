@@ -8,6 +8,6 @@
 
 void encoder_init(void);
 word encoder_count(byte encoder);
-long encoder_period(byte encoder);
+dword encoder_period(byte encoder);
 
 #endif // _ENCODERS_H

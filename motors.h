@@ -22,6 +22,7 @@
 #define MOTOR1_BITS         ( MOTOR1_DIRA_MASK | MOTOR1_DIRB_MASK )
 #define MOTOR2_BITS         ( MOTOR2_DIRA_MASK | MOTOR2_DIRB_MASK )
 
+
 // Motor numbers
 #define MOTOR1          1
 #define MOTOR2          2
@@ -45,7 +46,46 @@
 #define MOTOR_PER_DEF   100   // 0 - 100%.
 
 // Motor default control law delta.
-#define MOTOR_CNTL_LAW_DELTA    30000       // Time in micro seconds between each run of the control law. 
+#define MOTOR_CNTL_LAW_DELTA    30000       // Time in micro seconds between each run of the control law.
+
+
+/* Control Law defines*/
+
+// Initial gain values
+#define P_GAIN_DEF  1000
+#define I_GAIN_DEF  1000
+
+#define MAXDRIVE    100         // Maximum overall drive value
+#define DRIVE_SCALE_VAL 1000000 // Motor drive value scaling
+#define GAIN_DIV    1000        // Gain divisor
+
+// Compile time option to choose between 24V and 12V supply. 
+#define TWELVEVOLT
+//#define TWENTYFOURVOLT
+
+#ifdef  TWELVEVOLT   
+
+#define MINDRIVE   55       // Minimum drive value to overcome detent torque from a stopped position
+#define MINPERIOD  800      // Minimum PWM period in microseconds
+#define MAXPERIOD  1800     // Maximum PWM period in microseconds
+#define MINFREQ    1250
+#define MAXFREQ    555
+#define BVALUE     293
+
+#elif   TWENTYFOURVOLT
+
+#define MINDRIVE   40       // Minimum drive value to overcome detent torque from a stopped position
+#define MINPERIOD  370      // Minimum PWM period in microseconds
+#define MAXPERIOD  800      // Maximum PWM period in microseconds
+#define MINFREQ    2702
+#define MAXFREQ    1250
+#define BVALUE     -282
+
+#endif
+
+// Limits for error that remain in the range of reality.
+#define MAX_SPEED_ERROR   MAXDRIVE 
+#define SPEED_SET_SCALE   100       // Used to adjust speed setpoint.
 
 /*****************************************************************************/
 

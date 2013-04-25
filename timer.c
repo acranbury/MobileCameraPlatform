@@ -6,7 +6,7 @@
 
 
 // Global timer overflow counter, updated by TCNT_Overflow_ISR interrupt handler
-static word timer_overflow_count;
+static word volatile timer_overflow_count;
 
 /* Initialize timer module */
 void timer_init(void) {
@@ -21,11 +21,6 @@ void timer_init(void) {
 /* Current timer overflow count */
 word get_overflow_count(void) {
     return timer_overflow_count;
-}
-
-/* Reset timer overflow count */
-void reset_overflow_count(void) {
-    timer_overflow_count = 0;
 }
 
 /*      Milisecond sleep timer       */

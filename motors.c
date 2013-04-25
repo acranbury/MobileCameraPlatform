@@ -3,46 +3,8 @@
 #include "utils.h"
 #include "pwm.h"
 #include "timer.h"
-#include "motors.h"
 #include "encoders.h"
-
-/* Control Law defines*/
-
-// Initial gain values
-#define P_GAIN_DEF  1000
-#define I_GAIN_DEF  1000
-
-#define MAXDRIVE    100         // Maximum overall drive value
-#define DRIVE_SCALE_VAL 1000000 // Motor drive value scaling
-#define GAIN_DIV    1000        // Gain divisor
-
-// Compile time option to choose between 24V and 12V supply. 
-#define TWELVEVOLT
-//#define TWENTYFOURVOLT
-
-#ifdef  TWELVEVOLT   
-
-#define MINDRIVE   55       // Minimum drive value to overcome detent torque from a stopped position
-#define MINPERIOD  800      // Minimum PWM period in microseconds
-#define MAXPERIOD  1800     // Maximum PWM period in microseconds
-#define MINFREQ    1250
-#define MAXFREQ    555
-#define BVALUE     293
-
-#elif   TWENTYFOURVOLT
-
-#define MINDRIVE   40       // Minimum drive value to overcome detent torque from a stopped position
-#define MINPERIOD  370      // Minimum PWM period in microseconds
-#define MAXPERIOD  800      // Maximum PWM period in microseconds
-#define MINFREQ    2702
-#define MAXFREQ    1250
-#define BVALUE     -282
-
-#endif
-
-// Limits for error that remain in the range of reality.
-#define MAX_SPEED_ERROR   MAXDRIVE 
-#define SPEED_SET_SCALE   100       // Used to adjust speed setpoint.
+#include "motors.h"
 
 
 static int set_point_1 = 0;         // Current setpoint, 0% - 100%
@@ -197,7 +159,7 @@ void motor_set_speed(byte motor, char speed) {
 }
 
 // Return absolute value.
-int abs (int num){
+int abs(int num) {
     if (num < 0)
         return (num * -1);
     else

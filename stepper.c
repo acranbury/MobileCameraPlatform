@@ -9,12 +9,12 @@
 // Bit patterns for stepper motor
 static byte const STEPPER_PATTERN[] = { 0x8, 0xA, 0x2, 0x6, 0x4, 0x5, 0x1, 0x9 };
 
-static byte stepper_calibrated = 0; // Stepper calibrated flag
-static word stepper_position = 0;   // Current stepper position
-static word stepper_limit = 0;      // Maximum stepper position
-static word stepper_setpoint;       // Stepper position to move to
-static byte stepper_delay;          // Delay in ms between steps
-static char stepper_step_type;      // Half-stepping or full-stepping, plus direction (+/-)
+static byte stepper_calibrated = 0;         // Stepper calibrated flag
+static word volatile stepper_position = 0;  // Current stepper position
+static word stepper_limit = 0;              // Maximum stepper position
+static word stepper_setpoint;               // Stepper position to move to
+static byte stepper_delay;                  // Delay in ms between steps
+static char stepper_step_type;              // Half-stepping or full-stepping, plus direction (+/-)
 
 
 /* Initialize stepper motor control */

@@ -88,7 +88,6 @@
 void timer_init(void);
 void msleep(word);
 word get_overflow_count(void);
-void reset_overflow_count(void);
 
 
 #endif // _TIMER_H

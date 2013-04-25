@@ -30,5 +30,4 @@ void servo_init(void);
 void servo_set_angle(byte angle);
 
 
-
 #endif // _SERVO_H

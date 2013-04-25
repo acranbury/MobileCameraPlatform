@@ -12,19 +12,30 @@
 #include "motors.h"
 #include "encoders.h"
 
+#define TC_HEARTBEAT    6           // Heartbeat timer channel
+#define HEARTBEAT       1000000     // Heartbeat count in microseconds (with timer prescaler of 8)
+
 #define CMD_LEN     3   // command size
 #define PNG         1
 #define ABT         2
-#define TXT         3
-#define PAN         4
-#define TLT         5
-#define HOM         6
-#define CAL         7
-#define MOV         8
+#define RES         3
+#define TXT         4
+#define PAN         5
+#define TLT         6
+#define HOM         7
+#define CAL         8
+#define MOV         9
+
+
+word volatile heartbeat_count;
+
 
 void cmdparser(char *);
 int cmdconv(char *);
 void seekcmd(char *, int *);
+void stop_motion(void);
+void start_motion(void);
+void start_heartbeat(void);
  
 /*****************************************************************************/
 
@@ -41,8 +52,12 @@ void main(void) {
     motor_init();
     msleep(16);
     LCDinit();
+    //start_heartbeat();
     
     EnableInterrupts;
+    
+    motor_set_speed(MOTOR1C, 0);
+    motor_set_speed(MOTOR2C, 0);
     
     LCDputs("Calibrating...");
     stepper_calibrate();
@@ -51,14 +66,10 @@ void main(void) {
     LCDputs("Ready.");
     SCIputs("HCS12 ready to go!");
     
-    motor_set_speed('0', 0);
-    motor_set_speed('1', 0);
-    
     for(;;) {
         SCIdequeue(buffer);
         cmdparser(buffer);
         memset(buffer, 0, SCI_BUFSIZ+1);
-        
     } /* loop forever */
 }
 
@@ -89,20 +100,31 @@ void cmdparser(char *buffer) {
             break;
         
         case PNG:   // ping
-            SCIprintf("png%d",numcmd);   // echo command confirmation with stamp.
-            LCDclear();
-            LCDputs("Ping!");
+            SCIprintf("png%05d",numcmd);   // echo command confirmation with stamp.
+            //LCDclear();
+            //LCDputs("Ping!");
             
             numcmd++;
             numchars += 8;
             break;
         
         case ABT:  // STOP THE PRESS!
-            SCIprintf("abt%d",numcmd);
+            SCIprintf("abt%05d",numcmd);
             LCDclear();
             LCDputs("Abort!\nAbort!");
-            //{__asm STOP;};    // try one or the other
-            //HALT_AND_QUIT;
+            stop_motion();
+            
+            numcmd++;
+            numchars += 8;
+            break;
+        
+        case RES:  // Resume operation
+            SCIprintf("res%05d",numcmd);
+            LCDclear();
+            LCDputs("Resuming...");
+            start_motion();
+            LCDclear();
+            LCDputs("Resumed");
             
             numcmd++;
             numchars += 8;
@@ -110,7 +132,7 @@ void cmdparser(char *buffer) {
         
         #pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for atoi)
         case TLT:  // Tilt camera up/down
-            SCIprintf("tlt%d",numcmd);
+            SCIprintf("tlt%05d",numcmd);
             LCDprintf("\rServo Angle: %03d", atoi(&(buffer[4])));
             servo_set_angle(atoi(&(buffer[4])));
             
@@ -119,8 +141,8 @@ void cmdparser(char *buffer) {
             break;
         
         case PAN:  // Pan camera left/right
-            SCIprintf("pan%d",numcmd);
-            LCDprintf("\nStep angle:  %03d", atoi(&(buffer[4])));
+            SCIprintf("pan%05d",numcmd);
+            LCDprintf("\nStep Angle:  %03d", atoi(&(buffer[4])));
             stepper_set_angle(atoi(&(buffer[4])));
             
             numcmd++;
@@ -128,7 +150,7 @@ void cmdparser(char *buffer) {
             break;
         
         case HOM:  // Home the camera
-            SCIprintf("hom%d",numcmd);
+            SCIprintf("hom%05d",numcmd);
             servo_set_angle(90);
             stepper_set_angle(90);
             LCDclear();
@@ -139,23 +161,21 @@ void cmdparser(char *buffer) {
             break;
         
         case CAL:  // Calibrate the camera
-            SCIprintf("hom%d",numcmd);
+            SCIprintf("hom%05d",numcmd);
             
             LCDputs("Calibrating...");
             stepper_calibrate();
-            
             servo_set_angle(90);
             stepper_set_angle(90);
-            
             LCDclear();
-            LCDputs("Camera calibrated");
+            LCDputs("Calibrated");
             
             numcmd++;
             numchars += 8;
             break;
         
-          case MOV:
-            SCIprintf("mov%d", numcmd);
+        case MOV:
+            SCIprintf("mov%05d", numcmd);
             LCDprintf("Motor %c: %3d\n", buffer[numchars+3], atoi(&buffer[numchars + 4]));
             motor_set_speed(buffer[numchars+3], (char)(atoi(&buffer[numchars + 4])));
             
@@ -165,7 +185,7 @@ void cmdparser(char *buffer) {
             
         /*
         case TXT:  // Print to LCD.
-            SCIprintf("txt%d",numcmd);
+            SCIprintf("txt%05d",numcmd);
             numcmd++;
             LCDprintf("%s", buffer+3);
             numchars += 3;
@@ -190,6 +210,8 @@ int cmdconv(char *cmd) {
         return PNG;
     else if(!(strcmp(cmd, "abt")))
         return ABT;
+    else if(!(strcmp(cmd, "res")))
+        return RES;
     else if(!(strcmp(cmd, "tlt")))
         return TLT;  
     else if(!(strcmp(cmd, "pan")))
@@ -218,4 +240,48 @@ void seekcmd(char *buffer, int *numchars) {
         (*numchars)++;
     while ((*buffer++ == 0) && (*numchars + 2 <= SCI_BUFSIZ))   // Seek until non-zero is found. (beginning of new cmd).
         (*numchars)++;
+}
+
+/* Turn off all motion */
+void stop_motion(void) {
+    // Turn off motors
+    motor_set_speed(MOTOR1C, 0);
+    motor_set_speed(MOTOR2C, 0);
+    msleep(20);                 // Wait for motors to come to a stop
+    TC_INT_DISABLE(TC_MOTOR);   // Disable motor control law
+    
+    servo_set_angle(90);        // Move servo to center
+    TC_INT_DISABLE(TC_STEPPER); // Disable stepper control
+}
+
+/* Start up motion again */
+void start_motion(void) {
+    TC_INT_ENABLE(TC_MOTOR);    // Re-enable motor control law
+    TC_INT_ENABLE(TC_STEPPER);  // Re-enable stepper control
+}
+
+/* Start heartbeat timer */
+void start_heartbeat(void) {
+    TC_OC(TC_HEARTBEAT);
+    SET_OC_ACTION(TC_HEARTBEAT,OC_OFF);
+    
+    TC(TC_HEARTBEAT) = TCNT + HEARTBEAT;    // Preset OC channel
+    TC_INT_ENABLE(TC_HEARTBEAT);            // Enable timer channel interrupt
+}
+
+
+/* Heartbeat interrupt handler */
+interrupt VECTOR_NUM(TC_VECTOR(TC_HEARTBEAT)) void heartbeat_ISR(void) {
+    static word prev_count = 0;
+    word cur_count;
+    
+    cur_count = TC(TC_HEARTBEAT);   // Acknowledge interrupt by accessing timer channel
+    
+    // Check if correct number of overflows has occurred
+    if(get_overflow_count() == 15) { //HEARTBEAT / 0xFFFF) {
+        TC(TC_HEARTBEAT) += HEARTBEAT;  // Rearm channel register, clearing TFLG as well
+        heartbeat_count++;
+    }
+    
+    prev_count = cur_count;     // Remember count for next time
 }
