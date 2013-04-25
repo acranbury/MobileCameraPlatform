@@ -41,6 +41,7 @@ int main(int argc, char *argv[]){
 	// Turns on the spot 150 degrees and stops
 	Spin(150);
 	
+	// close serial port
 	SerialClose();
 	
 	return(0);
@@ -55,10 +56,10 @@ void Drive(int distance, int time){
 	char buffer[33];
 	
 	// compute the speed
-	int speed = distance/time;
+	float speed = distance/time;
 	
 	// write the distance command to the serial port
-	sprintf(buffer, "dst00%3ddst01%3ddst10%3ddst11%3d", speed, distance, speed, distance);
+	sprintf(buffer, "dst00%3ddst01%3ddst10%3ddst11%3d", (int)speed, distance, (int)speed, distance);
 	SerialWrite((unsigned char *)buffer, 32);
 }
 

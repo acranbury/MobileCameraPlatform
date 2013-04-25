@@ -1,5 +1,88 @@
 #include <stdio.h>
 #include "serial.h"
 
+#define MAXSPEED	x
+#define SPINMODIFIER	2.356
+#define BIGCIRCLE		0
+#define SMALLCIRCLE		1
+#define D1				458
+#define D2				628
+#define D3				798
+
+void WaitForDTMF(char tone);
+void TravelCircularPath(int size);
+void Pivot180();
+
 int main(int argc, char *argv[]){
+	
+	// open and initialize the serial port
+	SerialOpen();
+	SerialInit();
+	
+	// Wait at point A until hears DTMF D
+	WaitForDTMF('D');
+	
+	// Travels circular path (A, B, C) full circle in 1 min
+	TravelCircularPath(0);
+	
+	// Waits at point C until hears DTMF *
+	WaitForDTMF('*');
+	
+	// Pivots 180 degrees to point D
+	Pivot180();
+	
+	// Waits at point D until hears DTMF A
+	WaitForDTMF('A');
+	
+	// Travels circular path (D, E, F) full circle in 90 seconds and stops
+	TravelCircularPath(1);
+	
+	// close serial port
+	SerialClose();
+	
+	return(0);
+}
+
+// wait for a DTMF tone
+void WaitForDTMF(char tone){
+}
+
+// travel a circular path
+void TravelCircularPath(int size){
+	int distanceRight, distanceLeft;
+	float speedRight, speedLeft;
+	char buffer[17];
+	
+	switch(size){
+		case BIGCIRCLE:
+			distanceRight = D2;
+			distanceLeft = D3;
+			break;
+		case SMALLCIRCLE:
+			distanceRight = D2;
+			distanceLeft = D1;
+			break;
+		default:
+			break;
+	}
+	
+	speedRight = distanceRight / 60;
+	speedLeft = distanceLeft / 60;
+	
+	sprintf(buffer, "dst00%3ddst01%3d", distanceLeft, (int)speedLeft);
+	SerialWrite(buffer, 16);
+	sprintf(buffer, "dst10%3ddst11%3d", distanceRight, (int)speedRight);
+	SerialWrite(buffer, 16);
+}
+
+// pivot on the spot 180 degrees
+void Pivot180(){
+	char buffer[17];
+	
+	float distance = 180 * SPINMODIFIER;
+	int speed = MAXSPEED;
+	
+	// write the command to the serial port
+	sprintf(buffer, "dst00%3ddst01%3d", (int)distance, speed);
+	SerialWrite(buffer, 16);
 }
