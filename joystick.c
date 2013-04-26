@@ -180,8 +180,8 @@ int main (int argc, char **argv)
 			
 			// do a ping every time we send commands, so we can check to see if 
 			// the platform is responding
-			//snprintf(buffer, BUFSIZE+1, "png00000");
-			//SerialWrite((unsigned char *)buffer, BUFSIZE);
+			snprintf(buffer, BUFSIZE+1, "png00000");
+			SerialWrite((unsigned char *)buffer, BUFSIZE);
 			
 // *********************** A Button ************************************
 			if(button[BUTTONA]){

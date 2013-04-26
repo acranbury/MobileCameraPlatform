@@ -88,7 +88,7 @@ void TravelCircularPath(int size){
 void Pivot180(){
 	char buffer[17];
 	
-	float distance = 180 * SPINMODIFIER;
+	float distance = 180 * SPINMODIFIER * 2;
 	int speed = MAXSPEED;
 	
 	// write the command to the serial port
