@@ -39,9 +39,10 @@
 
 // strings
 #define GAMEPAD			"/dev/input/js0"
-#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format png vlc://quit --run-time=1"
+#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format ppm vlc://quit --run-time=1"
 #define WEBCAMAUDIO		"arecord -f cd -d 5 audio.wav"
 
+// make sure controller is set to XInput not DirectInput
 // Gamepad buttons
 #define BUTTONA			0
 #define BUTTONB			1
@@ -78,7 +79,10 @@ int main (int argc, char **argv)
 	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, buttonLBPressed = 0, buttonSTARTPressed = 0;
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, 
+		buttonLBPressed = 0, buttonRBPressed = 0, buttonSTARTPressed = 0, buttonBACKPressed = 0;
+		
+	int aborted = 0;
 	
 	struct timespec prevTime, currTime;
 	clockid_t clock;
@@ -175,8 +179,8 @@ int main (int argc, char **argv)
 			
 			// do a ping every time we send commands, so we can check to see if 
 			// the platform is responding
-			snprintf(buffer, BUFSIZE+1, "png00000");
-			SerialWrite((unsigned char *)buffer, BUFSIZE);
+			//snprintf(buffer, BUFSIZE+1, "png00000");
+			//SerialWrite((unsigned char *)buffer, BUFSIZE);
 			
 // *********************** A Button ************************************
 			if(button[BUTTONA]){
@@ -239,18 +243,46 @@ int main (int argc, char **argv)
 			}else
 				buttonLBPressed = 0;
 				
-// ********************** Start Button *********************************
-			if(button[BUTTONSTART]){
+// ********************** Right Button *********************************
+			if(button[BUTTONRB]){
 				// toggle command delay
-				if(buttonSTARTPressed == 0){
+				if(buttonRBPressed == 0){
 					snprintf(buffer, BUFSIZE+1, "cal00000");
 					SerialWrite((unsigned char *)buffer,BUFSIZE);
-					buttonSTARTPressed = 1;
+					buttonRBPressed = 1;
 					tilt = HOMETILT;
 					pan = HOMEPAN;
 				}
 			}else
+				buttonRBPressed = 0;
+				
+// ********************** Start Button *********************************
+			if(button[BUTTONSTART]){
+				// only resume if aborted first
+				if(aborted)
+					// toggle command delay
+					if(buttonSTARTPressed == 0){
+						snprintf(buffer, BUFSIZE+1, "res00000");
+						SerialWrite((unsigned char *)buffer,BUFSIZE);
+						tilt = HOMETILT;
+						pan = HOMEPAN;
+						aborted = 0;
+						buttonSTARTPressed = 1;
+					}
+			}else
 				buttonSTARTPressed = 0;
+				
+// ********************** Back Button *********************************
+			if(button[BUTTONBACK]){
+				// toggle command delay
+				if(buttonBACKPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "abt00000");
+					SerialWrite((unsigned char *)buffer,BUFSIZE);
+					aborted = 1;
+					buttonBACKPressed = 1;
+				}
+			}else
+				buttonBACKPressed = 0;
 
 // ********************* Right Thumbstick ******************************
 			if(axis[AXISRTLR] > CAMTHRESHOLD){
@@ -348,15 +380,16 @@ void CaptureAudio(void){
 	system(WEBCAMAUDIO);
 }
 
-// calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path /home/stoppal/test --scene-prefix image_prefix --scene-format png vlc://quit --run-time=1"
+// calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"
 void CaptureImage(void){
 	system(WEBCAMIMAGE);
 }
 
 // monitors the serial connection for platform response
 void * MonitorPlatform(void *arg){
-	unsigned char * monitorBuffer;
+	unsigned char monitorBuffer[8] = {0};
 	struct timespec monitorPrevTime, monitorCurrTime;
+	int numBytes = 0;
 	clockid_t monitorClock;
 	
 	// get process clock timer
@@ -366,15 +399,17 @@ void * MonitorPlatform(void *arg){
 	
 	
 	while(1){
-		SerialRead(monitorBuffer, 8);
+		numBytes = SerialRead(monitorBuffer, 8);
 		
-		printf("%s\n", monitorBuffer);
+		if(numBytes > 0){
+			printf("%s\n", monitorBuffer);
 		
-		// get the current time
-		clock_gettime(monitorClock, &monitorCurrTime);
+			// get the current time
+			clock_gettime(monitorClock, &monitorCurrTime);
 		
-		if(((unsigned)monitorCurrTime.tv_nsec - (unsigned)monitorPrevTime.tv_nsec) > MONITORTIMEOUT){
-			printf("Large delay between pings detected - Platform error!\n");
+			if(((unsigned)monitorCurrTime.tv_nsec - (unsigned)monitorPrevTime.tv_nsec) > MONITORTIMEOUT){
+				printf("Large delay between pings detected - Platform error!\n");
+			}
 		}
 	}
 	

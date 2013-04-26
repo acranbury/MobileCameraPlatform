@@ -100,7 +100,7 @@ int SerialRead(unsigned char * buffer, int numBytes){
 	if(fd > 0)
 		if((bytesRead = read(fd, buffer, numBytes)) < 0)
 			// read error
-			printf("Serial read of %d bytes failed\n", numBytes);
+			printf("Serial read of %d bytes failed - Error number: %d\n", numBytes, errno);
 	
 	// return number of bytes read
 	return(bytesRead);
