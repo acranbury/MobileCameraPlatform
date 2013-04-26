@@ -9,7 +9,7 @@
 #define D2				628		// distance outer wheel for small circle, inner wheel for large circle
 #define D3				798		// distance outer wheel travels on large circle
 
-void WaitForDTMF(char tone);
+int WaitForDTMF(char tone);
 void TravelCircularPath(int size);
 void Pivot180();
 
@@ -20,19 +20,28 @@ int main(int argc, char *argv[]){
 	SerialInit();
 	
 	// Wait at point A until hears DTMF D
-	WaitForDTMF('D');
+	if(!WaitForDTMF('D'){
+		printf("No tone detected\n");
+		exit(1);
+	}
 	
 	// Travels circular path (A, B, C) full circle in 1 min
 	TravelCircularPath(0);
 	
 	// Waits at point C until hears DTMF *
-	WaitForDTMF('*');
+	if(!WaitForDTMF('*')){
+		printf("No tone detected\n");
+		exit(1);
+	}
 	
 	// Pivots 180 degrees to point D
 	Pivot180();
 	
 	// Waits at point D until hears DTMF A
-	WaitForDTMF('A');
+	if(!WaitForDTMF('A')){
+		printf("No tone detected\n");
+		exit(1);
+	}
 	
 	// Travels circular path (D, E, F) full circle in 90 seconds and stops
 	TravelCircularPath(1);
