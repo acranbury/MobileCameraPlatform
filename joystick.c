@@ -10,6 +10,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "serial.h"
+#include "image.h"
 
 #include <linux/joystick.h>
 
@@ -73,31 +74,32 @@ void *MonitorPlatform(void *arg);
 
 int main (int argc, char **argv)
 {
-	
+
 	int *axis;
 	int *button;
 	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, 
+
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, buttonRHATPressed = 0,
 		buttonLBPressed = 0, buttonRBPressed = 0, buttonSTARTPressed = 0, buttonBACKPressed = 0;
-		
+
 	int aborted = 0;
-	
+
 	struct timespec prevTime, currTime;
 	clockid_t clock;
-	
+
 	int cmdDelay = CMDDELAYHI;
 	int leftMotor, rightMotor, speed, oldLeft = 0, oldRight = 0;
-	
+
 	pthread_t monitorThread;
 	pthread_attr_t attr;
-	
+
 	unsigned char axes = 2;
 	unsigned char buttons = 2;
 	int version = 0x000800;
 	char name[NAME_LENGTH] = "Unknown";
-	
+
 	char buffer[BUFSIZE] = {'0','1','2','3','4','5','6','7'};
 
 	// open the gamepad port
@@ -127,17 +129,17 @@ int main (int argc, char **argv)
 	fcntl(fd, F_SETFL, O_NONBLOCK);
 
 	printf("Running ... (interrupt to exit)\n");
-	
+
 	// initialize and set the thread attributes
  	pthread_attr_init( &attr );
  	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
  	pthread_attr_setscope( &attr, PTHREAD_SCOPE_SYSTEM );
- 	
+
  	if(pthread_create(&monitorThread, &attr, MonitorPlatform, NULL) != 0){
 		printf("Error creating monitor thread!\n Exiting...\n");
 		exit(11);
 	}
-	
+
 	// get process clock timer
 	clock_getcpuclockid(0, &clock);
 	// get current time and set prevTime
@@ -150,10 +152,10 @@ int main (int argc, char **argv)
 	// if time is right
 	// send commands to platform
 	while (1) {
-		
+
 		// do a read of the gamepad port
 		if(read(fd, &js, sizeof(struct js_event)) == sizeof(struct js_event)){
-			
+
 			// get the type of event, fill out button or axis appropriately
 			switch(js.type & ~JS_EVENT_INIT) {
 			case JS_EVENT_BUTTON:
@@ -162,26 +164,26 @@ int main (int argc, char **argv)
 			case JS_EVENT_AXIS:
 				axis[js.number] = js.value;
 				break;
-			}	
+			}
 		// didn't get an event, check the error to make sure nothing went wrong
-		}else if (errno != EAGAIN) { 
+		}else if (errno != EAGAIN) {
 			perror("\njoystick: error reading");
 			exit (1);
 		}
-		
+
 		// get current time
 		//clock_getcpuclockid(0, &clock);
 		clock_gettime(clock, &currTime);
-		
+
 		// if some amount of time has passed, use the current structure
 		// to send commands to the camera/platform
 		if(!(((unsigned)currTime.tv_nsec - (unsigned)prevTime.tv_nsec) < cmdDelay)){
-			
-			// do a ping every time we send commands, so we can check to see if 
+
+			// do a ping every time we send commands, so we can check to see if
 			// the platform is responding
 			//snprintf(buffer, BUFSIZE+1, "png00000");
 			//SerialWrite((unsigned char *)buffer, BUFSIZE);
-			
+
 // *********************** A Button ************************************
 			if(button[BUTTONA]){
 				// Take a picture
@@ -192,7 +194,7 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonAPressed = 0;
-				
+
 // ************************ B Button ***********************************
 			if(button[BUTTONB]){
 				// Take an audio sample
@@ -203,7 +205,7 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonBPressed = 0;
-				
+
 // *********************** X Button ************************************
 			if(button[BUTTONX]){
 				// Take an audio sample
@@ -216,7 +218,7 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonXPressed = 0;
-				
+
 // ********************* Y Button **************************************
 			if(button[BUTTONY]){
 				// Take an audio sample
@@ -229,7 +231,7 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonYPressed = 0;
-				
+
 // ****************** Left Button **************************************
 			if(button[BUTTONLB]){
 				// toggle command delay
@@ -242,7 +244,7 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonLBPressed = 0;
-				
+
 // ********************** Right Button *********************************
 			if(button[BUTTONRB]){
 				// toggle command delay
@@ -255,7 +257,19 @@ int main (int argc, char **argv)
 				}
 			}else
 				buttonRBPressed = 0;
-				
+
+
+// ********************** Right Hat ************************************
+			if(button[BUTTONRHAT]){
+				// toggle laser sight
+				if(buttonRHATPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "aim00000");
+					SerialWrite((unsigned char *)buffer, BUFSIZE);
+					buttonRHATPressed = 1;
+				}
+			}else
+				buttonRHATPressed = 0;
+
 // ********************** Start Button *********************************
 			if(button[BUTTONSTART]){
 				// only resume if aborted first
@@ -271,7 +285,7 @@ int main (int argc, char **argv)
 					}
 			}else
 				buttonSTARTPressed = 0;
-				
+
 // ********************** Back Button *********************************
 			if(button[BUTTONBACK]){
 				// toggle command delay
@@ -302,7 +316,7 @@ int main (int argc, char **argv)
 				snprintf(buffer, BUFSIZE+1, "pan1 %3d", pan);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
-			
+
 			if(axis[AXISRTUD] > CAMTHRESHOLD){
 				// tilt down
 				tilt -= DELTATILT;
@@ -320,11 +334,11 @@ int main (int argc, char **argv)
 				snprintf(buffer, BUFSIZE+1, "tlt1 %3d", tilt);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 			}
-			
+
 // ************************ Speed Updates ******************************
 			// convert trigger values into speed
 			speed = (SPEEDMNUM * (axis[AXISRTRIG] - axis[AXISLTRIG])) / SPEEDMDEN;
-			
+
 			// turn left
 			if(axis[AXISLTLR] < -TURNTHRESHOLD){
 				leftMotor = speed * (100 + ((SPEEDMNUM * axis[AXISLTLR]) / 32767)) / 100;
@@ -338,7 +352,7 @@ int main (int argc, char **argv)
 				rightMotor = speed;
 				leftMotor = speed;
 			}
-			
+
 			// check D-Pad for spin
 			// spin left
 			if(axis[AXISDPADLR] < 0){
@@ -349,7 +363,7 @@ int main (int argc, char **argv)
 				leftMotor = speed;
 				rightMotor = -speed;
 			}
-				
+
 			// only send drive commands if the motor speed has changed
 			if(leftMotor != oldLeft){
 				// send commands to drive both motors
@@ -370,7 +384,7 @@ int main (int argc, char **argv)
 			// get the current time and put it in prevTime
 			clock_gettime(clock, &prevTime);
 		}
-			
+
 		fflush(stdout);
 	}
 }
@@ -383,6 +397,7 @@ void CaptureAudio(void){
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"
 void CaptureImage(void){
 	system(WEBCAMIMAGE);
+	AnalyzeImage();
 }
 
 // monitors the serial connection for platform response
@@ -391,27 +406,27 @@ void * MonitorPlatform(void *arg){
 	struct timespec monitorPrevTime, monitorCurrTime;
 	int numBytes = 0;
 	clockid_t monitorClock;
-	
+
 	// get process clock timer
 	clock_getcpuclockid(0, &monitorClock);
 	// get current time and set prevTime
 	clock_gettime(monitorClock, &monitorPrevTime);
-	
-	
+
+
 	while(1){
 		numBytes = SerialRead(monitorBuffer, 8);
-		
+
 		if(numBytes > 0){
 			printf("%s\n", monitorBuffer);
-		
+
 			// get the current time
 			clock_gettime(monitorClock, &monitorCurrTime);
-		
+
 			if(((unsigned)monitorCurrTime.tv_nsec - (unsigned)monitorPrevTime.tv_nsec) > MONITORTIMEOUT){
 				printf("Large delay between pings detected - Platform error!\n");
 			}
 		}
 	}
-	
+
 	pthread_exit(NULL);
 }
