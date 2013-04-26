@@ -7,9 +7,9 @@
 #define SPINMODIFIER	2.356	// converts degrees into wheel distance
 #define BIGCIRCLE		0
 #define SMALLCIRCLE		1
-#define D1				458		// distance inner wheel travels on small circle
-#define D2				628		// distance outer wheel for small circle, inner wheel for large circle
-#define D3				798		// distance outer wheel travels on large circle
+#define D1				4580		// distance inner wheel travels on small circle
+#define D2				6280		// distance outer wheel for small circle, inner wheel for large circle
+#define D3				7980		// distance outer wheel travels on large circle
 
 int WaitForDTMF(char tone);
 void TravelCircularPath(int size);
@@ -89,8 +89,9 @@ void TravelCircularPath(int size){
 // pivot on the spot 180 degrees
 void Pivot180(){
 	char buffer[17];
+	
+	float distance = 180 * SPINMODIFIER * 2;
 
-	float distance = 180 * SPINMODIFIER;
 	int speed = MAXSPEED;
 
 	// write the command to the serial port

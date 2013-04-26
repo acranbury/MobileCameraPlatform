@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
 	}
 
 	// Travels a straight path for 1.73m in 10 sec
-	Drive(173, 10);
+	Drive(1730, 10);
 
 
 	// Turns on the spot 90 degrees
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
 	}
 
 	// Travels a straight path for 1 m in 10 sec
-	Drive(100, 10);
+	Drive(1000, 10);
 
 	// Turns on the spot 120 degrees
 	Spin(120);
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 	}
 
 	// Travels a straight path for 2 m in 10 sec
-	Drive(200, 10);
+	Drive(2000, 10);
 
 	// Turns on the spot 150 degrees and stops
 	Spin(150);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]){
 }
 
 // wait for a DTMF tone
-void WaitForDTMF(int tone){
+int WaitForDTMF(int tone){
 }
 
 // drive forwards a distance in some time
