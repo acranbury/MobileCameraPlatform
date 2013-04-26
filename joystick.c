@@ -10,6 +10,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "serial.h"
+#include "image.h"
 
 #include <linux/joystick.h>
 
@@ -79,7 +80,7 @@ int main (int argc, char **argv)
 	struct js_event js;
 	int fd;
 	int tilt = HOMETILT, pan = HOMEPAN;
-	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, 
+	int buttonAPressed = 0, buttonBPressed = 0, buttonXPressed = 0, buttonYPressed = 0, buttonRHATPressed = 0,
 		buttonLBPressed = 0, buttonRBPressed = 0, buttonSTARTPressed = 0, buttonBACKPressed = 0;
 		
 	int aborted = 0;
@@ -256,6 +257,17 @@ int main (int argc, char **argv)
 			}else
 				buttonRBPressed = 0;
 				
+// ********************** Right Hat ************************************
+			if(button[BUTTONRHAT]){
+				// toggle laser sight
+				if(buttonRHATPressed == 0){
+					snprintf(buffer, BUFSIZE+1, "aim00000");
+					SerialWrite((unsigned char *)buffer, BUFSIZE);
+					buttonRHATPressed = 1;
+				}
+			}else
+				buttonRHATPressed = 0;
+				
 // ********************** Start Button *********************************
 			if(button[BUTTONSTART]){
 				// only resume if aborted first
@@ -383,6 +395,7 @@ void CaptureAudio(void){
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"
 void CaptureImage(void){
 	system(WEBCAMIMAGE);
+	AnalyzeImage();
 }
 
 // monitors the serial connection for platform response
