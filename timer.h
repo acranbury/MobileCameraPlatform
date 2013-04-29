@@ -11,6 +11,7 @@
 // Timer modes: timer enable, fast flag clear enable, counter stop while in freeze mode
 #define TSCR1_INIT      ( TSCR1_TEN_MASK | TSCR1_TFFCA_MASK | TSCR1_TSFRZ_MASK )
 
+#define FAST_FLAG_CLR       // Fast flag clear is enabled
 
 // Output compare TCNT deltas
 #define OC_DELTA_1MS        1000                    // 1ms delta with prescaler of 8
@@ -86,8 +87,8 @@
 /*****************************************************************************/
 
 void timer_init(void);
-void msleep(word);
 word get_overflow_count(void);
+void msleep(word);
 
 
 #endif // _TIMER_H

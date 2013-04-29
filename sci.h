@@ -5,7 +5,7 @@
 #include "utils.h"
 
 
-#define SCI_BUFSIZ          16  // Size in bytes of the SCI receive ring buffer
+#define SCI_BUFSIZ          40  // Size in bytes of the SCI receive ring buffer (sending up to five 8byte commands using 38400baud)
 #define SCI_CMDSIZ          8   // Length of command in bytes
 
 // No parity, 8 data bits, 1 stop bit (mask bits cleared)
