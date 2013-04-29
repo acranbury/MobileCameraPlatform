@@ -10,12 +10,13 @@ static word volatile timer_overflow_count;
 
 /* Initialize timer module */
 void timer_init(void) {
-    timer_overflow_count = 0;   // Reset overflow counter
     
     //TOI_ENABLE;                 // Enable TCNT overflow interrupt
     
     SET_TCNT_PRESCALE(TCNT_PRESCALE_8);     // Set timer prescaler
     SET_BITS(TSCR1,TSCR1_INIT);             // Set timer operation modes and enable timer
+    
+    timer_overflow_count = 0;   // Reset overflow counter
 }
 
 /* Current timer overflow count */
@@ -45,9 +46,11 @@ void msleep(word ms) {
 
 /* TCNT overflow interrupt handler */
 interrupt VectorNumber_Vtimovf void TCNT_Overflow_ISR(void) {
+    #ifdef FAST_FLAG_CLR
+    (void)TCNT;             // Clear timer overflow flag by reading TCNT (fast flag clear enabled)
+    #else
+    TFLG2 = TFLG2_TOF_MASK; // Clear timer overflow flag by writing a one to it
+    #endif
     
-    (void)TCNT;     // Clear timer overflow flag by reading TCNT (fast flag clear enabled)
-    //TFLG2 = TFLG2_TOF_MASK;     // Clear timer overflow flag by writing a one to it
-
     timer_overflow_count++;
 }
