@@ -25,10 +25,12 @@
 #define HOM         7
 #define CAL         8
 #define MOV         9
+#define DST         10
+#define SPN         11
+#define AIM         12
 
 
 word volatile heartbeat_count;
-
 
 void cmdparser(char *);
 int cmdconv(char *);
@@ -40,6 +42,8 @@ void start_heartbeat(void);
 /*****************************************************************************/
 
 #pragma MESSAGE DISABLE C1420   // Disable "Function call result ignored" warning (for memset)
+#pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for atoi)
+#pragma MESSAGE DISABLE C12056  // Disable "SP debug info incorrect because of optimization" warning
 void main(void) {
     char buffer[SCI_BUFSIZ+1] = {0};
     
@@ -50,26 +54,27 @@ void main(void) {
     stepper_init();
     encoder_init();
     motor_init();
-    msleep(16);
-    LCDinit();
-    //start_heartbeat();
+    msleep(16); LCDinit();
+    //start_heartbeat();    // Not used, TCNT overflow interrupts causing issues
     
-    EnableInterrupts;
+    DDRP |= PTP_PTP0_MASK;  // Set DDR for laser GPIO
     
+    // Motors off initially
     motor_set_speed(MOTOR1C, 0);
     motor_set_speed(MOTOR2C, 0);
+    
+    EnableInterrupts;
     
     LCDputs("Calibrating...");
     stepper_calibrate();
     
-    LCDclear();
-    LCDputs("Ready.");
+    LCDclear(); LCDputs("Ready.");
     SCIputs("HCS12 ready to go!");
     
     for(;;) {
         SCIdequeue(buffer);
         cmdparser(buffer);
-        memset(buffer, 0, SCI_BUFSIZ+1);
+        memset(buffer, 0, SCI_BUFSIZ+1);    // Clear out the command buffer after each command parsed
     } /* loop forever */
 }
 
@@ -77,122 +82,186 @@ void main(void) {
 * 
 *   Purpose: Parse the command string to call the correct function. 
 *
-*   Input: char *tempcmd: input command string.
+*   Input: char *cmdtype: input command string.
 *
 *   Output: int result: Resulting integer value.
 *
 ***************************************************************/
 void cmdparser(char *buffer) {
-    char tempcmd[CMD_LEN+1] = {0};
+    char cmdtype[CMD_LEN+1] = {0};
     int numchars = 0;
-    static int numcmd = 0;  
+    static int numcmd = 0;  // Count of number of commands parsed
+    static byte tog = 0;    // Laser toggle bit
     
-    // while we do not have a valid command and we still have characters to check,
-    while(buffer[0] && ((numchars+2) < SCI_BUFSIZ)) { 
-        tempcmd[0] = buffer[numchars];
-        tempcmd[1] = buffer[numchars+1]; 
-        tempcmd[2] = buffer[numchars+2]; 
-        tempcmd[3] = 0;
+    cmdtype[0] = buffer[numchars];
+    cmdtype[1] = buffer[numchars+1]; 
+    cmdtype[2] = buffer[numchars+2]; 
+    cmdtype[CMD_LEN] = '\0';    // Terminate input command after three bytes, leaving just the command type
+    
+    switch(cmdconv(cmdtype)) {
+    case 0:     // If no command found, go to next character.
+        seekcmd(buffer, &numchars);
+        break;
+    
+    case PNG:   // ping
+        SCIprintf("png%05d",numcmd);   // echo command confirmation with stamp.
+        //LCDclear(); LCDputs("Ping!");
         
-        switch(cmdconv(tempcmd)) {
-        case 0:     // If no command found, go to next character.
-            seekcmd(buffer, &numchars);
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case ABT:  // STOP THE PRESS!
+        SCIprintf("abt%05d",numcmd);
+        LCDclear(); LCDputs("Abort!\nAbort!");
+        stop_motion();
         
-        case PNG:   // ping
-            SCIprintf("png%05d",numcmd);   // echo command confirmation with stamp.
-            //LCDclear();
-            //LCDputs("Ping!");
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case RES:  // Resume operation
+        SCIprintf("res%05d",numcmd);
+        LCDclear(); LCDputs("Resuming...");
+        start_motion();
+        LCDclear(); LCDputs("Resumed");
         
-        case ABT:  // STOP THE PRESS!
-            SCIprintf("abt%05d",numcmd);
-            LCDclear();
-            LCDputs("Abort!\nAbort!");
-            stop_motion();
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case TLT:  // Tilt camera up/down
+        SCIprintf("tlt%05d",numcmd);
+        LCDprintf("\rServo Angle: %03d", atoi(&buffer[4]));
+        servo_set_angle(atoi(&buffer[4]));
         
-        case RES:  // Resume operation
-            SCIprintf("res%05d",numcmd);
-            LCDclear();
-            LCDputs("Resuming...");
-            start_motion();
-            LCDclear();
-            LCDputs("Resumed");
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case PAN:  // Pan camera left/right
+        SCIprintf("pan%05d",numcmd);
+        LCDprintf("\nStep Angle:  %03d", atoi(&buffer[4]));
+        stepper_set_angle(atoi(&buffer[4]));
         
-        #pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for atoi)
-        case TLT:  // Tilt camera up/down
-            SCIprintf("tlt%05d",numcmd);
-            LCDprintf("\rServo Angle: %03d", atoi(&(buffer[4])));
-            servo_set_angle(atoi(&(buffer[4])));
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case HOM:  // Home the camera
+        SCIprintf("hom%05d",numcmd);
+        servo_set_angle(90);
+        stepper_set_angle(90);
+        LCDclear(); LCDputs("Camera homed");
         
-        case PAN:  // Pan camera left/right
-            SCIprintf("pan%05d",numcmd);
-            LCDprintf("\nStep Angle:  %03d", atoi(&(buffer[4])));
-            stepper_set_angle(atoi(&(buffer[4])));
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case CAL:  // Calibrate the camera
+        SCIprintf("hom%05d",numcmd);
         
-        case HOM:  // Home the camera
-            SCIprintf("hom%05d",numcmd);
-            servo_set_angle(90);
-            stepper_set_angle(90);
-            LCDclear();
-            LCDputs("Camera homed");
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        LCDclear(); LCDputs("Calibrating...");
         
-        case CAL:  // Calibrate the camera
-            SCIprintf("hom%05d",numcmd);
-            
-            LCDputs("Calibrating...");
-            stepper_calibrate();
-            servo_set_angle(90);
-            stepper_set_angle(90);
-            LCDclear();
-            LCDputs("Calibrated");
-            
-            numcmd++;
-            numchars += 8;
-            break;
+        stepper_calibrate();
+        servo_set_angle(90);
+        stepper_set_angle(90);
         
-        case MOV:
-            SCIprintf("mov%05d", numcmd);
-            LCDprintf("Motor %c: %3d\n", buffer[numchars+3], atoi(&buffer[numchars + 4]));
-            motor_set_speed(buffer[numchars+3], (char)(atoi(&buffer[numchars + 4])));
-            
-            numcmd++;
-            numchars += 8;
-            break;
-            
-        /*
-        case TXT:  // Print to LCD.
-            SCIprintf("txt%05d",numcmd);
-            numcmd++;
-            LCDprintf("%s", buffer+3);
-            numchars += 3;
-            break;
-        */
+        LCDclear(); LCDputs("Calibrated");
         
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case MOV:   // Set motor speed (0% - 100%)
+        SCIprintf("mov%05d", numcmd);
+        if(buffer[numchars+3] == '2') {
+            // Both motors selected
+            motor_set_speed(MOTOR1C, (char)atoi(&buffer[numchars+4]));
+            motor_set_speed(MOTOR2C, (char)atoi(&buffer[numchars+4]));
+            LCDclear(); LCDprintf("\rMotor %c: %3d\nMotor %c: %3d", MOTOR1C, atoi(&buffer[numchars+4]), MOTOR2C, atoi(&buffer[numchars+4]));
         }
+        else {
+            motor_set_speed(buffer[numchars+3], (char)atoi(&buffer[numchars+4]));
+            LCDclear(); LCDprintf("\rMotor %c: %3d", buffer[numchars+3], atoi(&buffer[numchars+4]));
+        }
+        
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case DST:   // Set motor distance (+speed)
+        SCIprintf("dst%05d", numcmd);
+        switch(buffer[numchars+4]) {
+        case '0':   // Setting a speed
+            
+            // Set speed to both motors if 4th char is a '2'
+            if(buffer[numchars+3] == '2') {
+                motor_set_speed(MOTOR1C,
+                  motor_convert(MOTOR1C, (word)atoi(&buffer[numchars+5]))
+                );
+                motor_set_speed(MOTOR2C,
+                  motor_convert(MOTOR2C, (word)atoi(&buffer[numchars+5]))
+                );
+            } else {
+                motor_set_speed(buffer[numchars+3],
+                  motor_convert(buffer[numchars+3], (word)atoi(&buffer[numchars+5]))
+                );
+                //SCIprintf("speed m%c: %3d\n", buffer[numchars+3], motor_convert(buffer[numchars+3], (word)atoi(&buffer[numchars+5])));
+            }
+            
+            break;
+        case '1':   // Setting a distance
+            
+            // Set speed to both motors if 4th char is a '2'
+            if(buffer[numchars+3] == '2') {
+                motor_set_distance(MOTOR1C, (word)atoi(&buffer[numchars+5]));
+                motor_set_distance(MOTOR2C, (word)atoi(&buffer[numchars+5]));
+            }
+            else
+                motor_set_distance(buffer[numchars+3], (word)atoi(&buffer[numchars+5]));
+            
+            LCDclear(); LCDprintf("\rDist: %3d", atoi(&buffer[numchars+5]));
+            
+            break;
+        }
+        
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case SPN:   // Spin in place
+        SCIprintf("spn%05d", numcmd);
+        DisableInterrupts;
+        motor_set_speed(MOTOR1C, -50);
+        motor_set_speed(MOTOR2C, 50);
+        motor_set_distance(MOTOR1C, (word)atoi(&buffer[numchars+3]));
+        motor_set_distance(MOTOR2C, (word)atoi(&buffer[numchars+3]));
+        EnableInterrupts;
+        SCIprintf("Dist: %d\n", (word)atoi(&buffer[numchars+3]));
+        
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    case AIM:   // Toggle laser pointer
+        SCIprintf("aim%05d",numcmd);
+        tog = (tog) ? 0 : 1;
+        PTP_PTP0 = (tog) ? 1 : 0;
+        
+        numcmd++;
+        numchars += SCI_CMDSIZ;
+        break;
+    
+    /*
+    case TXT:   // Print to LCD
+        SCIprintf("txt%05d",numcmd);
+        LCDprintf("%s", buffer+3);
+        numcmd++;
+        numchars += 3;
+        break;
+    */
+    
     }
 }
 
@@ -224,6 +293,12 @@ int cmdconv(char *cmd) {
         return CAL;    
     else if(!(strcmp(cmd, "mov")))
         return MOV;
+    else if(!(strcmp(cmd, "dst")))
+        return DST;
+    else if(!(strcmp(cmd, "spn")))
+        return SPN;
+    else if(!(strcmp(cmd, "aim")))
+        return AIM;
     else
         return 0;
 }

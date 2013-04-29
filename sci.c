@@ -1,5 +1,6 @@
 /* SCI module functions */
 
+#include <hidef.h>      // required for EnableInterrupts and DisableInterrupts macros
 #include <mc9s12c32.h>
 #include <stdio.h>      // for vsprintf()
 #include <stdarg.h>     // for va_*() functions
@@ -26,7 +27,7 @@ void SCIinit(void) {
 
 /* Flush SCI ring buffer */
 void SCIflush(void) {
-    unsigned char i;
+    byte i;
     for(i=0; i < SCI_BUFSIZ; i++)
         SCIbuf[i] = '\0';
 }
@@ -41,10 +42,10 @@ void SCIdequeue(char *buf){
         // Loop through all bytes in command
         for (bytenum=0; bytenum < SCI_CMDSIZ; bytenum++) {
         DisableInterrupts;
-          *buf++ = SCIbuf[i];       // Fill buffer with bytes from SCI buffer
+          *buf++ = SCIbuf[i];   // Fill buffer with bytes from SCI buffer
           SCIbuf[i] = '\0';
-          i = (i+1) % SCI_BUFSIZ;   // Increment to next index; wrap to beginning if buffer overflows
-          SCIcount--;       // Decrement global buffer byte counter
+          i = (byte)(((word)i+1) % SCI_BUFSIZ); // Increment to next index; wrap to beginning if buffer overflows
+          SCIcount--;           // Decrement global buffer byte counter
         EnableInterrupts;
         }
     }
@@ -120,9 +121,9 @@ interrupt VectorNumber_Vsci void SCI_RX_ISR(void) {
     // Check error flags before grabbing chars
     if(!(SCISR1 & ( SCISR1_OR | SCISR1_NF | SCISR1_FE | SCISR1_PF ))) {
         SCIbuf[i] = SCIDRL;     // Store received byte into ring buffer
-        i = (unsigned char)((i+1) % SCI_BUFSIZ); // Increment to next index; wrap to beginning if buffer overflows
+        i = (byte)(((word)i+1) % SCI_BUFSIZ);   // Increment to next index; wrap to beginning if buffer overflows
         if(SCIcount < SCI_BUFSIZ)
-            SCIcount++;     // Increment global buffer byte counter
+            SCIcount++;         // Increment global buffer byte counter
     } else {
         (void)SCIDRL; // Clear flags by reading data register
     }
