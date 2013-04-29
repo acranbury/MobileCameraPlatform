@@ -9,8 +9,7 @@
 
 #define ENCODER_VANE_DIST       2741    // Distance of one encoder vane in millimeters times 10000 (actual 0.2741mm per vane)
 #define ENCODER_VANE_DIVISOR    10000
-//#define ENCODER_VANE_METRE      3648    // Number of encoder vanes in one metre
-#define ENCODER_VANE_METRE      3550    // Number of encoder vanes in one metre
+#define ENCODER_VANE_METRE      3550    // Number of encoder vanes in one metre (calculated value is 3648, but this was found to be a bit high)
 
 
 /*****************************************************************************/
