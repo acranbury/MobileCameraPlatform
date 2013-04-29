@@ -22,7 +22,7 @@
  * Expected path to tmwtypes.h 
  * C:\Program Files\MATLAB\R2012a\extern\include\tmwtypes.h 
  */
-const int tone1336L = 91;
+const int toneL1336 = 91;
 const real64_T tone1336[91] = {
    -0.01461630112256,-0.002843752089608, 0.003161807985063, 0.007228502357022,
    0.004420290464451,-0.003517246039497,-0.008796937620753,-0.005149382743651,

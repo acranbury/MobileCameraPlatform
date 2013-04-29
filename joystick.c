@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include "serial.h"
 #include "image.h"
+#include "dtmf.h"
 
 #include <linux/joystick.h>
 
@@ -40,7 +41,7 @@
 
 // strings
 #define GAMEPAD			"/dev/input/js0"
-#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format ppm vlc://quit --run-time=1"
+#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/MobileCameraPlatform --scene-prefix image --scene-format ppm vlc://quit --run-time=1"
 #define WEBCAMAUDIO		"arecord -f cd -d 5 audio.wav"
 
 // make sure controller is set to XInput not DirectInput
@@ -182,8 +183,8 @@ int main (int argc, char **argv)
 			// do a ping every time we send commands, so we can check to see if
 			// the platform is responding
 
-			snprintf(buffer, BUFSIZE+1, "png00000");
-			SerialWrite((unsigned char *)buffer, BUFSIZE);
+			//snprintf(buffer, BUFSIZE+1, "png00000");
+			//SerialWrite((unsigned char *)buffer, BUFSIZE);
 			
 // *********************** A Button ************************************
 			if(button[BUTTONA]){
@@ -390,9 +391,12 @@ int main (int argc, char **argv)
 	}
 }
 
-// calls "arecord -f cd -d 5 audio.wav"
+// waits for a 'D' DTMF tone
 void CaptureAudio(void){
-	system(WEBCAMAUDIO);
+	if(WaitonDTMF('D'))
+		printf("Found it!\n");
+	else
+		printf("Didn't find it :(\n");
 }
 
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"

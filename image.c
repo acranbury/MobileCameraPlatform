@@ -58,7 +58,7 @@ void AnalyzeImage(){
 				columnSum[i] += (float)normalized[i][j];
 			}
 			difference[i] = columnSum[i] - prevSum;
-			printf("Column Sum: %f prevSum: %f Difference: %f \n", columnSum[i], prevSum,  difference[i]);
+			//printf("Column Sum: %f prevSum: %f Difference: %f \n", columnSum[i], prevSum,  difference[i]);
 			prevSum = columnSum[i];
 		}
 		

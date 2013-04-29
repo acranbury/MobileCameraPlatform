@@ -38,6 +38,7 @@ int WaitonDTMF (char tone){
 	int windowsize1, windowsize2;
 	int filter1size, filter2size;
 	int samplecount = 0;
+	int i;
 	real64_T * filter1, * filter2;
 	FILE * fp = NULL;
 	switch (tone){
@@ -231,17 +232,22 @@ int WaitonDTMF (char tone){
 	while ((!found) && (samplecount < TIMEOUT)){ // Keep waiting	
 		if (fp != NULL)		// If  the previous data was unsuccessful, close it.
 			fclose(fp);
-		//system(WEBCAMDTMF);
+		system(WEBCAMDTMF);
 		samplecount++;
 		if (!(fp = fopen(DTMFRECORDING, "rb")))		// Open sample data and check if it was opened sucessfully.
 			printf ("Error opening file\n");
-		fseek(fp, 0, SEEK_SET);				// Seek to beginning of data (sample).
+		//fseek(fp, 0, SEEK_SET);				// Seek to beginning of data (sample).
 		//fseek(fp, DATASTART, SEEK_SET);	// Seek to beginning of data (.wav).
-		while ((!found) && (GetDataASCII (fp, sample_data) == 0)) {		// Continue 
-			fseek (fp, (long)(sizeof (float)*SAMPLECHUNK), SEEK_CUR);
+		while ((!found) && (GetDataDATA (fp, sample_data) == 0)) {		// Continue 
+			//fseek (fp, (long)(sizeof (float)*SAMPLECHUNK), SEEK_CUR);
+			memset(output1, 0, sizeof(float) * windowsize1);
+			memset(output2, 0, sizeof(float) * windowsize2);
 			Convolve(sample_data, output1, filter1, filter1size, windowsize1);
 			Convolve(sample_data, output2, filter2, filter2size, windowsize2);
 			found = AnalyzeData(output1, output2, windowsize1, windowsize2);
+			for (i = 0; i < SAMPLECHUNK; i++){
+				printf ("%f\n", sample_data[i]); 
+			}
 		}	// until end of file or the tone is found.
 	}	// until the tone is found.
 	if (samplecount >= TIMEOUT)
@@ -269,7 +275,8 @@ int GetDataASCII (FILE * fp, float data [SAMPLECHUNK])
 		if (strcmp("\r\n", chardata))				// Only add a character if it is not a newline.
 		{	
 			data[j] = atof (chardata);				// convert the current string read to a float number and store it
-			//printf (" %f\n ",data[j]);				// Make sure data is working. 
+			if ((j % 10) == 0)
+				printf (" %f\n ",data[j]);				// Make sure data is working. 
 		}
 		else if (feof(fp))
 			break;
@@ -281,7 +288,7 @@ int GetDataASCII (FILE * fp, float data [SAMPLECHUNK])
 		return 0;
 }
 
-/*****************************GetDataDATA************************************
+/*****************************GetDataDATA*********************************
 *	Purpose: Read data from a .wav file to obtain a DTMF tone sample.
 *	
 *	Input: pointer to input array.
@@ -298,7 +305,7 @@ int GetDataDATA (FILE * fp, float data [SAMPLECHUNK])
 	if (feof(fp))
 		printf ("End of input file was reached while reading! %d floats read", bytes);
 	
-	if ((fgetc(fp) == EOF) || (fgetc(fp) == NULL))
+	if ((fgetc(fp) == EOF))
 		return -1;
 	else
 		return 0;
@@ -348,7 +355,7 @@ void Convolve (float input[SAMPLECHUNK], float * output, real64_T * filter, int 
 int AnalyzeData (float * result1, float * result2, int size1, int size2){
 	// Find the average of each result.
 	int i;
-	volatile float average1 = 0, average2 = 0;
+	float average1 = 0, average2 = 0;
 
 	// Get rid of the starting 10% and ending 10%. (Only use steady state).
 	for (i = (size1/10); i < ((size1 * 90)/100); i++){
@@ -363,6 +370,7 @@ int AnalyzeData (float * result1, float * result2, int size1, int size2){
 	}
 	average2 /= (size2 - (2 * (size2/10)));
 
+	printf("Average1: %.10f Average2: %.10f\n", average1, average2);
 	if ((average1 > PRESENCE_THRESHOLD) && (average2 > PRESENCE_THRESHOLD))
 		return 1;
 	else
