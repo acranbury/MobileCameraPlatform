@@ -42,7 +42,7 @@ void start_heartbeat(void);
 /*****************************************************************************/
 
 #pragma MESSAGE DISABLE C1420   // Disable "Function call result ignored" warning (for memset)
-#pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for atoi)
+#pragma MESSAGE DISABLE C2705   // Disable "Possible loss of data" warning (for heartbeat TCNT)
 #pragma MESSAGE DISABLE C12056  // Disable "SP debug info incorrect because of optimization" warning
 void main(void) {
     char buffer[SCI_BUFSIZ+1] = {0};
@@ -75,6 +75,7 @@ void main(void) {
         SCIdequeue(buffer);
         cmdparser(buffer);
         memset(buffer, 0, SCI_BUFSIZ+1);    // Clear out the command buffer after each command parsed
+        //LCDclear(); LCDprintf("\r%7d  %7d\n%7d  %7d", drive_value1, drive_value2, speed_error1, speed_error2);
     } /* loop forever */
 }
 
@@ -92,6 +93,8 @@ void cmdparser(char *buffer) {
     int numchars = 0;
     static int numcmd = 0;  // Count of number of commands parsed
     static byte tog = 0;    // Laser toggle bit
+    char motor1_pct, motor2_pct;
+    
     
     cmdtype[0] = buffer[numchars];
     cmdtype[1] = buffer[numchars+1]; 
@@ -133,7 +136,7 @@ void cmdparser(char *buffer) {
     case TLT:  // Tilt camera up/down
         SCIprintf("tlt%05d",numcmd);
         LCDprintf("\rServo Angle: %03d", atoi(&buffer[4]));
-        servo_set_angle(atoi(&buffer[4]));
+        servo_set_angle((byte)atoi(&buffer[4]));
         
         numcmd++;
         numchars += SCI_CMDSIZ;
@@ -142,7 +145,7 @@ void cmdparser(char *buffer) {
     case PAN:  // Pan camera left/right
         SCIprintf("pan%05d",numcmd);
         LCDprintf("\nStep Angle:  %03d", atoi(&buffer[4]));
-        stepper_set_angle(atoi(&buffer[4]));
+        stepper_set_angle((byte)atoi(&buffer[4]));
         
         numcmd++;
         numchars += SCI_CMDSIZ;
@@ -177,9 +180,11 @@ void cmdparser(char *buffer) {
         SCIprintf("mov%05d", numcmd);
         if(buffer[numchars+3] == '2') {
             // Both motors selected
-            motor_set_speed(MOTOR1C, (char)atoi(&buffer[numchars+4]));
-            motor_set_speed(MOTOR2C, (char)atoi(&buffer[numchars+4]));
-            LCDclear(); LCDprintf("\rMotor %c: %3d\nMotor %c: %3d", MOTOR1C, atoi(&buffer[numchars+4]), MOTOR2C, atoi(&buffer[numchars+4]));
+            TC_INT_DISABLE(TC_MOTOR);   // Disable motor control law
+              motor_set_speed(MOTOR1C, (char)atoi(&buffer[numchars+4]));
+              motor_set_speed(MOTOR2C, (char)atoi(&buffer[numchars+4]));
+            TC_INT_ENABLE(TC_MOTOR);    // Re-enable motor control law
+            LCDclear(); LCDprintf("\rM%c: %3d  M%c: %3d", MOTOR1C, atoi(&buffer[numchars+4]), MOTOR2C, atoi(&buffer[numchars+4]));
         }
         else {
             motor_set_speed(buffer[numchars+3], (char)atoi(&buffer[numchars+4]));
@@ -195,20 +200,22 @@ void cmdparser(char *buffer) {
         switch(buffer[numchars+4]) {
         case '0':   // Setting a speed
             
+            motor1_pct = motor_convert(MOTOR1C, (int)atoi(&buffer[numchars+5]));
+            motor2_pct = motor_convert(MOTOR2C, (int)atoi(&buffer[numchars+5]));
+            
             // Set speed to both motors if 4th char is a '2'
             if(buffer[numchars+3] == '2') {
-                motor_set_speed(MOTOR1C,
-                  motor_convert(MOTOR1C, (word)atoi(&buffer[numchars+5]))
-                );
-                motor_set_speed(MOTOR2C,
-                  motor_convert(MOTOR2C, (word)atoi(&buffer[numchars+5]))
-                );
-            } else {
+                TC_INT_DISABLE(TC_MOTOR);   // Disable motor control law
+                    motor_set_speed(MOTOR1C, motor1_pct);
+                    motor_set_speed(MOTOR2C, motor2_pct);
+                TC_INT_ENABLE(TC_MOTOR);    // Re-enable motor control law
+            } else
                 motor_set_speed(buffer[numchars+3],
-                  motor_convert(buffer[numchars+3], (word)atoi(&buffer[numchars+5]))
+                  motor_convert(buffer[numchars+3], (int)atoi(&buffer[numchars+5]))
                 );
-                //SCIprintf("speed m%c: %3d\n", buffer[numchars+3], motor_convert(buffer[numchars+3], (word)atoi(&buffer[numchars+5])));
-            }
+            
+            //LCDclear(); LCDprintf("\rM1: %3d M2: %3d", motor1_pct, motor2_pct);
+            //LCDprintf("\nS1: %3d S2: %3d", atoi(&buffer[numchars+5]), atoi(&buffer[numchars+5]));
             
             break;
         case '1':   // Setting a distance
@@ -217,11 +224,12 @@ void cmdparser(char *buffer) {
             if(buffer[numchars+3] == '2') {
                 motor_set_distance(MOTOR1C, (word)atoi(&buffer[numchars+5]));
                 motor_set_distance(MOTOR2C, (word)atoi(&buffer[numchars+5]));
+                //LCDclear(); LCDprintf("\nD%c: %3d  D%c: %3d", MOTOR1C, atoi(&buffer[numchars+5]), MOTOR2C, atoi(&buffer[numchars+5]));
             }
-            else
+            else {
                 motor_set_distance(buffer[numchars+3], (word)atoi(&buffer[numchars+5]));
-            
-            LCDclear(); LCDprintf("\rDist: %3d", atoi(&buffer[numchars+5]));
+                //LCDclear(); LCDprintf("\rDist %c: %3d", buffer[numchars+3], atoi(&buffer[numchars+5]));
+            }
             
             break;
         }
@@ -238,7 +246,7 @@ void cmdparser(char *buffer) {
         motor_set_distance(MOTOR1C, (word)atoi(&buffer[numchars+3]));
         motor_set_distance(MOTOR2C, (word)atoi(&buffer[numchars+3]));
         EnableInterrupts;
-        SCIprintf("Dist: %d\n", (word)atoi(&buffer[numchars+3]));
+        SCIprintf("Dist: %3d\n", atoi(&buffer[numchars+3]));
         
         numcmd++;
         numchars += SCI_CMDSIZ;

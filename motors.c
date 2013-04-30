@@ -11,7 +11,9 @@
 static int P_GAIN = P_GAIN_DEF;
 static int I_GAIN = I_GAIN_DEF;
 static word set_point1 = 0, set_point2 = 0;         // Current motor setpoint (0% - 100%)
-//static byte volatile count_down = 25;
+
+long speed_error1 = 0, speed_error2 = 0, read_period1 = 0, read_period2 = 0, intermediate_drive_value1, intermediate_drive_value2;
+byte drive_value1 = 0, drive_value2 = 0;
 
 
 /* Initialize motor PWM channels */
@@ -173,28 +175,21 @@ void motor_set_speed(byte motor, char speed) {
 }
 
 /* Convert speed in mm/s to a range of 0-100 */
-char motor_convert(byte motor, word speed) {
-    long converted_speed1, converted_speed2;
+char motor_convert(byte motor, int speed) {
+    long converted_speed;
     switch(motor) {
     case MOTOR1C:
-        converted_speed1 = (((dword)speed * SPEED_RATIO_L) / SPEED_RATIO_DIVISOR) + SPEED_OFFSET_L;
-        
-        if(converted_speed1 < 0)
-            converted_speed1 = 1;
-        else if(converted_speed1 > 100)
-            converted_speed1 = 100;
-        
-        return (char)converted_speed1;
-        break;
     case MOTOR2C:
-        converted_speed2 = (((dword)speed * SPEED_RATIO_R) / SPEED_RATIO_DIVISOR) + SPEED_OFFSET_R;
+        // Not sure why the return val from abs() must be done first, but it does or it will break!
+        converted_speed = abs(speed);
+        converted_speed = ((converted_speed * SPEED_RATIO) / SPEED_RATIO_DIVISOR) + SPEED_OFFSET;
         
-        if(converted_speed2 < 0)
-            converted_speed2 = 0;
-        else if(converted_speed2 > 100)
-            converted_speed2 = 100;
+        if(converted_speed < 0)
+            converted_speed = 0;
+        else if(converted_speed > 100)
+            converted_speed = 100;
         
-        return (char)converted_speed2;
+        return (char)converted_speed;
         break;
     default:
         break;
@@ -215,17 +210,36 @@ int abs(int num) {
 interrupt VECTOR_NUM(TC_VECTOR(TC_MOTOR)) void Control_Law_ISR(void) {
     // Speed and integral error must be a signed value
     static long integral_error1 = 0, integral_error2 = 0;
-    long speed_error1 = 0, speed_error2 = 0, read_period1 = 0, read_period2 = 0;
-    char drive_value1 = 0, drive_value2 = 0;
-    //word cur_count1, cur_count2;
+    //long speed_error1 = 0, speed_error2 = 0, read_period1 = 0, read_period2 = 0, intermediate_drive_value1, intermediate_drive_value2;
+    //byte drive_value1 = 0, drive_value2 = 0;
+    long encoder1_period = 0, encoder2_period = 0;
+    static word prev_encoder1_count = 0, prev_encoder2_count = 0;
+    word cur_encoder1_count, cur_encoder2_count;
+    
+    cur_encoder1_count = encoder_count(ENC1);
+    cur_encoder2_count = encoder_count(ENC2);
+    
+    if(cur_encoder1_count == prev_encoder1_count)
+        encoder1_period = 0;
+    else
+        encoder1_period = encoder_period(ENC1);
+    
+    if(cur_encoder2_count == prev_encoder2_count)
+        encoder2_period = 0;
+    else
+        encoder2_period = encoder_period(ENC2);
+    
     
     // Calculate error
-    read_period1 = (DRIVE_SCALE_VAL / encoder_period(ENC1)) + BVALUE; 
-    read_period1 *= MAXDRIVE - MINDRIVE;
-    read_period1 /= MINFREQ - MAXFREQ;
-    read_period2 = (DRIVE_SCALE_VAL / encoder_period(ENC2)) + BVALUE;
-    read_period2 *= MAXDRIVE - MINDRIVE;
-    read_period2 /= MINFREQ - MAXFREQ;
+    read_period1 = (DRIVE_SCALE_VAL / encoder1_period);
+    read_period1 *= (MINDRIVE - MAXDRIVE);
+    read_period1 /= (MINFREQ - MAXFREQ);
+    read_period1 += BVALUE;
+    
+    read_period2 = (DRIVE_SCALE_VAL / encoder2_period);
+    read_period2 *= (MINDRIVE - MAXDRIVE);
+    read_period2 /= (MINFREQ - MAXFREQ);
+    read_period2 += BVALUE;
     
     speed_error1 = set_point1 - read_period1;
     speed_error2 = set_point2 - read_period2;
@@ -233,64 +247,50 @@ interrupt VECTOR_NUM(TC_VECTOR(TC_MOTOR)) void Control_Law_ISR(void) {
     
     // Motor 1
     // Check that error is in a realistic range
-    if((speed_error1 < MAX_SPEED_ERROR) && (speed_error1 > -MAX_SPEED_ERROR)) {  
+    if((speed_error1 >= -MAX_SPEED_ERROR) && (speed_error1 <= MAX_SPEED_ERROR)) {
         // Check if integration needs to be performed (not at rails)
         if (!((PWM_DTY(MOTOR1_PWM) <= MINDRIVE) && (speed_error1 < 0)) && !((PWM_DTY(MOTOR1_PWM) >= MAXDRIVE) && (speed_error1 > 0)))
             integral_error1 += speed_error1;
         
         // Perform control law calculation
-        drive_value1 = (((speed_error1 * P_GAIN) + (integral_error1 * I_GAIN)) / GAIN_DIV) + MINDRIVE;
+        intermediate_drive_value1 = ((((speed_error1 * P_GAIN) + (integral_error1 * I_GAIN)) / GAIN_DIV) + MINDRIVE);
         
         // Bind to limits
-        if (drive_value1 > MAXDRIVE)
-            drive_value1 = MAXDRIVE;
-        else if ((drive_value1 < MINDRIVE) && (set_point1 == 0))
-            drive_value1 = 0;
-        else if (drive_value1 < MINDRIVE)
+        if(intermediate_drive_value1 < MINDRIVE)
             drive_value1 = MINDRIVE;
+        else if(intermediate_drive_value1 > MAXDRIVE)
+            drive_value1 = MAXDRIVE;
+        else
+            drive_value1 = (byte)intermediate_drive_value1;
         
         PWM_DTY(MOTOR1_PWM) = drive_value1;    // Set motor 1 duty cycle to calculated drive value
-        
-        /*
-        if(set_point1 > 0) {
-            if(count_down > 0) {
-                PWM_DTY(MOTOR1_PWM) = drive_value1;    // Set motor 1 duty cycle to calculated drive value
-            } else
-                PWM_DTY(MOTOR1_PWM) = 0;
-        }
-        */
     }
     
     // Motor 2
     // Check that error is in a realistic range
-    if((speed_error2 < MAX_SPEED_ERROR) && (speed_error2 > -MAX_SPEED_ERROR)) {  
+    if((speed_error2 >= -MAX_SPEED_ERROR) && (speed_error2 <= MAX_SPEED_ERROR)) {
         // Check if integration needs to be performed (not at rails)
         if (!((PWM_DTY(MOTOR2_PWM) <= MINDRIVE) && (speed_error2 < 0)) && !((PWM_DTY(MOTOR2_PWM) >= MAXDRIVE) && (speed_error2 > 0)))
             integral_error2 += speed_error2;
         
         // Perform control law calculation
-        drive_value2 = (((speed_error2 * P_GAIN) + (integral_error2 * I_GAIN)) / GAIN_DIV) + MINDRIVE;
+        intermediate_drive_value2 = ((((speed_error2 * P_GAIN) + (integral_error2 * I_GAIN)) / GAIN_DIV) + MINDRIVE);
         
         // Bind to limits
-        if (drive_value2 > MAXDRIVE)
-            drive_value2 = MAXDRIVE;
-        else if ((drive_value2 < MINDRIVE) && (set_point2 == 0))
-            drive_value2 = 0;
-        else if (drive_value2 < MINDRIVE)
+        if(intermediate_drive_value2 < MINDRIVE)
             drive_value2 = MINDRIVE;
+        else if(intermediate_drive_value2 > MAXDRIVE)
+            drive_value2 = MAXDRIVE;
+        else
+            drive_value2 = (byte)intermediate_drive_value2;
         
         PWM_DTY(MOTOR2_PWM) = drive_value2;    // Set motor 2 duty cycle to calculated drive value
-        
-        /*
-        if(set_point2 > 0) {
-            if(count_down > 0) {
-                PWM_DTY(MOTOR2_PWM) = drive_value2;    // Set motor 1 duty cycle to calculated drive value
-                count_down--;
-            } else
-                PWM_DTY(MOTOR2_PWM) = 0;
-        }
-        */
     }
+    
+    
+    prev_encoder1_count = cur_encoder1_count;
+    prev_encoder2_count = cur_encoder2_count;
+    
     
     TC(TC_MOTOR) = TCNT + MOTOR_CNTL_LAW_DELTA;   // Acknowledge interrupt and rearm to run again
 }

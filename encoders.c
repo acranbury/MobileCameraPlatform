@@ -83,6 +83,9 @@ word encoder_period(byte encoder) {
     
     prev_overflow = cur_overflow;   // Remember count for next time
     
+    if(period == 0)
+        return 0xFFFF;  // Never return zero (only happens at start when encoder interrupts have never fired)
+    
     return period;
 }
 
@@ -90,10 +93,10 @@ word encoder_period(byte encoder) {
 void motor_set_distance(byte motor, word distance) {
     switch(motor) {
     case MOTOR1C:
-        dist_setpoint1 = ((dword)distance * ENCODER_VANE_METRE) / 1000;  // Calculate number of encoder vanes to move
+        dist_setpoint1 = ((dword)distance * ENCODER_VANE_METRE) / 100;  // Calculate number of encoder vanes to move
         break;
     case MOTOR2C:
-        dist_setpoint2 = ((dword)distance * ENCODER_VANE_METRE) / 1000;  // Calculate number of encoder vanes to move
+        dist_setpoint2 = ((dword)distance * ENCODER_VANE_METRE) / 100;  // Calculate number of encoder vanes to move
         break;
     default:
         break;
