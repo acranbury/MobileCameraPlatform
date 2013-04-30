@@ -54,8 +54,8 @@
 /* Control Law defines */
 
 // Initial gain values
-#define P_GAIN_DEF      1000
-#define I_GAIN_DEF      1000
+#define P_GAIN_DEF      1500
+#define I_GAIN_DEF      1500
 
 #define MAXDRIVE        100     // Maximum overall drive value
 #define DRIVE_SCALE_VAL 1000000 // Motor drive value scaling
@@ -63,53 +63,51 @@
 
 // Compile time option to choose between 12V and 24V supply
 #define TWELVEVOLT
-//#define TWENTYFOURVOLT
+//#define TWENTYFOURVOLT    // ALL DEFINES ARE NOT SETUP YET FOR 24V!
 
 #ifdef  TWELVEVOLT
 
-#define MINDRIVE    55       // Minimum drive value to overcome detent torque from a stopped position
-#define MINPERIOD   800      // Minimum PWM period in microseconds
-#define MAXPERIOD   1800     // Maximum PWM period in microseconds
-#define MINFREQ     1250     // Minimum PWM frequency in microhertz
-#define MAXFREQ     555      // Maximum PWM frequency in microhertz
-#define BVALUE      293
-#define MAXSPEED_L  337     // Maximum speed of left motor in mm/s
-#define MINSPEED_L  204     // Minimum speed of left motor in mm/s
-#define MAXSPEED_R  331
-#define MINSPEED_R  196
+#define MINDRIVE    0       // Minimum drive value
+#define MINPERIOD   845     // Minimum encoder period in microseconds
+#define MAXPERIOD   65535   // Maximum encoder period in microseconds
+#define MAXSPEED    337     // Maximum speed of left motor in mm/s
+#define MINSPEED    0       // Minimum speed of left motor in mm/s
 
 #elif   TWENTYFOURVOLT
 
-#define MINDRIVE    40       // Minimum drive value to overcome detent torque from a stopped position
-#define MINPERIOD   370      // Minimum PWM period in microseconds
-#define MAXPERIOD   800      // Maximum PWM period in microseconds
-#define MINFREQ     2702     // Minimum PWM frequency in microhertz
-#define MAXFREQ     1250     // Maximum PWM frequency in microhertz
-#define BVALUE      -282
+#define MINDRIVE    0       // Minimum drive value to overcome detent torque from a stopped position
+#define MINPERIOD   370     // Minimum encoder period in microseconds
+#define MAXPERIOD   800     // Maximum encoder period in microseconds
 
 #else
 #error "Either TWELVEVOLT or TWENTYFOURVOLT must be defined"
 #endif
 
+#define MAXFREQ     (DRIVE_SCALE_VAL / MINPERIOD)   // Maximum encoder frequency in kHz
+#define MINFREQ     (DRIVE_SCALE_VAL / MAXPERIOD)   // Minimum encoder frequency in kHz
+#define BVALUE      -(((DRIVE_SCALE_VAL * (MINDRIVE - MAXDRIVE)) / (MINFREQ - MAXFREQ)) / MAXPERIOD)
+
 #define MAX_SPEED_ERROR     MAXDRIVE    // Limits for error that remain in the range of reality 
 #define SPEED_SET_SCALE     100         // Used to adjust speed setpoint
-#define SPEED_RATIO_L       744 //(((100 - 1) / (MAXSPEED_L - MINSPEED_L)) * 1000)    // 0.74*1000
-#define SPEED_RATIO_R       733 //(((100 - 1) / (MAXSPEED_R - MINSPEED_R)) * 1000)    // 0.73*1000
+
+#define SPEED_RATIO         297//(((MAXDRIVE - MINDRIVE) / (MAXSPEED - MINSPEED)) * 1000)
 #define SPEED_RATIO_DIVISOR 1000
-#define SPEED_OFFSET_L      -150    // 100 - SPEED_RATIO_L(MAXSPEED_L)
-#define SPEED_OFFSET_R      -143    // 100 - SPEED_RATIO_R(MAXSPEED_R)
+#define SPEED_OFFSET        0
 
 /*****************************************************************************/
 
 void motor_init(void);
 void motor_set_direction(byte, byte);
 void motor_set_speed(byte, char);
-char motor_convert(byte, word);
+char motor_convert(byte, int);
 
 static void motor_set_period(byte, byte);
 static void motor_set_duty(byte, byte);
 
 int abs(int);
+
+extern long speed_error1, speed_error2, read_period1, read_period2, intermediate_drive_value1, intermediate_drive_value2;
+extern byte drive_value1, drive_value2;
 
 
 #endif // _MOTORS_H
