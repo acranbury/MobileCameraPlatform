@@ -8,7 +8,7 @@
 #define HEIGHT		480
 #define WIDTH		640
 #define MAXVALUE	255
-#define HALFVALUE	MAXVALUE/2
+#define HALFVALUE	150
 
 unsigned char ApplyThreshold(unsigned char pixel[3]);
 

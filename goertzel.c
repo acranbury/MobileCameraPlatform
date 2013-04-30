@@ -12,6 +12,158 @@
 #include <math.h>
 #include "goertzel.h"
 
+char IdentifyDTMF (void){
+	int found = 0;
+	int sample_data [NUMSAMPLES];
+	int StartTime;
+	char found_tone = 0;
+
+	printf ("waiting...\n");	
+	StartTime = (int)time(NULL);		// Timer start
+	
+	while ((!found) && ((StartTime + TIMEOUT) > (int)(time(NULL)))) { // While a DTMF is not found and the search has not timed out.
+		GetData(sample_data);	// Get sample data.
+		// Search for DTMF tones.
+		//printf ("Power of 637  %f\n", (DetectDTMF(sample_data, 697, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 770  %f\n", (DetectDTMF(sample_data, 770, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 852  %f\n", (DetectDTMF(sample_data, 852, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 941  %f\n", (DetectDTMF(sample_data, 941, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1209 %f\n", (DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1336 %f\n", (DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1477 %f\n", (DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1633 %f\n", (DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		if ((DetectDTMF(sample_data, 697, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 697\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;
+				found_tone = '1';
+				
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;			
+				found_tone = '2';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;					
+				found_tone = '3';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;					
+				found_tone = 'A';
+			}
+		}			
+		else if ((DetectDTMF(sample_data, 770, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 770\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '4';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '5';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '6';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'B';
+			}
+		}
+		else if ((DetectDTMF(sample_data, 852, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 852\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '7';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '8';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '9';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'C';
+			}
+		}
+		else if ((DetectDTMF(sample_data, 941, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 941\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '*';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '0';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '#';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'D';
+			}
+		}
+		/*if (found_tone != tone){
+			found = 0;
+			found_tone = 0;
+		}*/
+	}	
+	
+	if ((found) )//&& (found_tone == tone))
+	{
+		printf ("SUCCESS!!!\n");
+		return found_tone;
+	}
+	else {		
+		printf ("FAIL\n");
+		return 0;
+	}
+}
+
+/*
+int main(int argc, char **argv){
+	printf("Waiting for D\n");
+	WaitonDTMF('D');
+	printf("Waiting for *\n");
+	WaitonDTMF('*');
+	printf("Waiting for 1\n");
+	WaitonDTMF('1');
+	printf("Waiting for 5\n");
+	WaitonDTMF('5');
+	printf("Waiting for 9\n");
+	WaitonDTMF('9');
+	printf("Waiting for 0\n");
+	WaitonDTMF('0');
+	printf("Waiting for 2\n");
+	WaitonDTMF('2');
+	printf("Waiting for 3\n");
+	WaitonDTMF('3');
+	printf("Waiting for 4\n");
+	WaitonDTMF('4');
+	printf("Waiting for 6\n");
+	WaitonDTMF('6');
+	printf("Waiting for 7\n");
+	WaitonDTMF('7');
+	printf("Waiting for 8\n");
+	WaitonDTMF('8');
+	printf("Waiting for A\n");
+	WaitonDTMF('A');
+	printf("Waiting for B\n");
+	WaitonDTMF('B');
+	printf("Waiting for C\n");
+	WaitonDTMF('C');
+	printf("Waiting for #\n");
+	WaitonDTMF('#');
+	printf ("done\n");
+	return(0);
+}*/
+
 /*	DetectDTMF
  * 
  * 	Input: sample data, desired frequency and number of samples
@@ -27,8 +179,7 @@ double DetectDTMF(int samples[], double freq, int N) {
     double coeff,normalizedfreq,power,s;
     int i;
     normalizedfreq = freq / SAMPLERATE;
-	printf ("PI: %d Norm_Freq %d\n", sizeof(M_PI), sizeof(normalizedfreq));
-    //coeff = 2 * cos((double)(M_PI) * (double)normalizedfreq );
+    coeff = 2 * cosf(2 * M_PI * normalizedfreq);
     for (i=0; i<N; i++) {
         s = samples[i] + coeff * s_prev - s_prev2;
         s_prev2 = s_prev;
@@ -47,28 +198,114 @@ double DetectDTMF(int samples[], double freq, int N) {
 int WaitonDTMF (char tone){
 	int found = 0;
 	int sample_data [NUMSAMPLES];
-	time_t StartTime;
+	int StartTime;
+	char found_tone = 0;
 
+	printf ("waiting...\n");	
+	StartTime = (int)time(NULL);		// Timer start
 	
-
-	StartTime = time(NULL);
+	while ((!found) && ((StartTime + TIMEOUT) > (int)(time(NULL)))) { // While a DTMF is not found and the search has not timed out.
+		GetData(sample_data);	// Get sample data.
+		// Search for DTMF tones.
+		//printf ("Power of 637  %f\n", (DetectDTMF(sample_data, 697, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 770  %f\n", (DetectDTMF(sample_data, 770, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 852  %f\n", (DetectDTMF(sample_data, 852, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 941  %f\n", (DetectDTMF(sample_data, 941, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1209 %f\n", (DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1336 %f\n", (DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1477 %f\n", (DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		//printf ("Power of 1633 %f\n", (DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) - POWERTHRESHOLD);
+		if ((DetectDTMF(sample_data, 697, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 697\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;
+				found_tone = '1';
+				
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;			
+				found_tone = '2';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;					
+				found_tone = '3';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;					
+				found_tone = 'A';
+			}
+		}			
+		else if ((DetectDTMF(sample_data, 770, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 770\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '4';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '5';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '6';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'B';
+			}
+		}
+		else if ((DetectDTMF(sample_data, 852, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 852\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '7';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '8';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;		
+				found_tone = '9';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'C';
+			}
+		}
+		else if ((DetectDTMF(sample_data, 941, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+			printf ("Got 941\n");
+			if ((DetectDTMF(sample_data, 1209, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '*';
+			}
+			else if ((DetectDTMF(sample_data, 1336, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '0';
+			}
+			else if ((DetectDTMF(sample_data, 1477, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = '#';
+			}
+			else if ((DetectDTMF(sample_data, 1633, NUMSAMPLES) / (double)(100 * NUMSAMPLES / 2)) > POWERTHRESHOLD){
+				found = 1;	
+				found_tone = 'D';
+			}
+		}
+		if (found_tone != tone){
+			found = 0;
+			found_tone = 0;
+		}
+	}	
 	
-	while ((!found) && ((StartTime + ((time_t)TIMEOUT)) < time(NULL))){
-		GetData(sample_data);
-		printf ("power of 697 HZ: %f\n", DetectDTMF(sample_data, 697, NUMSAMPLES));
-		printf ("power of 770 HZ: %f\n", DetectDTMF(sample_data, 770, NUMSAMPLES));
-		printf ("power of 852 HZ: %f\n", DetectDTMF(sample_data, 852, NUMSAMPLES));
-		printf ("power of 941 HZ: %f\n", DetectDTMF(sample_data, 941, NUMSAMPLES));
-		printf ("power of 1209 HZ: %f\n", DetectDTMF(sample_data, 1209, NUMSAMPLES));
-		printf ("power of 1336 HZ: %f\n", DetectDTMF(sample_data, 1336, NUMSAMPLES));
-		printf ("power of 1336 HZ: %f\n", DetectDTMF(sample_data, 1477, NUMSAMPLES));
-		printf ("power of 1633 HZ: %f\n", DetectDTMF(sample_data, 1633, NUMSAMPLES));
-	}
-	
-	if (found)
+	if ((found) && (found_tone == tone)){
+		printf ("SUCCESS!!!\n");
 		return 1;
-	else 
+	}
+	else {		
+		printf ("FAIL\n");
 		return 0;
+	}
 }
 
 /*	WaitonDTMF

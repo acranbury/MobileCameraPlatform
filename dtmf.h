@@ -21,5 +21,6 @@ int GetDataDATA (FILE * fp, float data [SAMPLECHUNK]);
 int WaitonDTMF (char tone);
 void Convolve (float input[SAMPLECHUNK], float * output, real64_T * filter, int filtersize, int windowsize);
 int AnalyzeData (float * result1, float * result2, int size1, int size2);
+char IdentifyDTMF();
 
 #endif
