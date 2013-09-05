@@ -327,7 +327,7 @@ void Convolve (float input[SAMPLECHUNK], float * output, real64_T * filter, int 
 	//printf ("input [0] %f\n", input[0]);
 	//printf ("input [1] %f\n", input[1]);
 	
-	if (!((filtersize == NULL) || (filter == NULL))){
+	if (!((filtersize == 0) || (filter == NULL))){
 		for (i = 0; i < filtersize; i++)			// copy const filter data.
 			filtertaps [i] = filter[i];
 		for (i = 0; i < windowsize; i++)		// For each response.

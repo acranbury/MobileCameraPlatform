@@ -1,0 +1,41 @@
+Mobile Camera Platform - Alan, Jack, Mark
+
+Pros and Cons
+
+Pros:
+Source control
+	We used git, it worked pretty well, we were all able to keep the
+	project in sync.
+Serial Communications
+	No problems with serial comms from the beginning, no dropped data
+Fully functional robot
+	Achieved all required objectives
+Group communication
+	We communicated well throughout the whole project
+Image recognition
+	Under standard conditions we didn't have any problems, we used a
+	simple algorithm and it worked without much wrangling
+LASER
+	We had a toggleable red laser pointer to aid with the aiming of the
+	camera.
+
+Cons:
+DTMF
+	We attempted to implement Goertzel, and spent too much time on it when
+	it didn't work very well. Convolution just worked from the get go.
+Control law
+	The control law was not originally implemented correctly, the
+	integration part was not being taken into account, which messed up our
+	speed control.
+Joystick
+	The joystick had some problems with timing, many commands were being
+	sent in a row, with long delays between bursts of commands. This was
+	replaced with code from the other group, which just worked the first
+	time.
+Laptop
+	All the project depended on Alan's laptop, since it was our Linux box
+	to control the robot.
+Secret resistor
+	There was a secret resistor in the encoders, which messed up the
+	encoder connector design.
+

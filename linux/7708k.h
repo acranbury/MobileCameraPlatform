@@ -16,6 +16,9 @@
  * Linear Phase      : Yes (Type 2)
  */
 
+#ifndef _7708K_H
+#define _7708K_h
+
 /* General type conversion for MATLAB generated C-code  */
 #include "tmwtypes.h"
 /* 
@@ -62,3 +65,5 @@ const real64_T tone770[146] = {
   -0.003217715396456, -0.00427104942993,0.0008966887563716,0.0001904576411947,
    0.004845021735702,  0.01324485309598
 };
+
+#endif

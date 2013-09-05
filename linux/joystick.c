@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include "image.h"
 #include "serial.h"
-#include "goertzel.h"
+#include "dtmf.h"
 
 #include <linux/joystick.h>
 
@@ -393,7 +393,7 @@ int main (int argc, char **argv)
 
 // waits for a 'D' DTMF tone
 void CaptureAudio(void){
-	printf("DTMF Tone: %c\n", IdentifyDTMF());
+	//printf("DTMF Tone: %c\n", IdentifyDTMF());
 }
 
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"
