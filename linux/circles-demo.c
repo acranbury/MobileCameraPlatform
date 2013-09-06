@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "serial.h"
-#include "goertzel.h"
+#include "dtmf.h"
 
 
 #define MAXSPEED		337
@@ -22,7 +23,6 @@
 #define DISTLARGERIGHT	7980
 #define DISTLARGELEFT	6280
 
-//int WaitForDTMF(char tone);
 void TravelCircularPath(int size);
 void Pivot180();
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
 	// open and initialize the serial port
 	SerialOpen();
 	SerialInit();
-	/*
+
 	// Wait at point A until hears DTMF D
 	if(!WaitonDTMF('D')){
 		printf("No tone detected\n");
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 	TravelCircularPath(BIGCIRCLE);
 	
 	sleep(70);
-*/
+
 	// Waits at point C until hears DTMF *
 	if(!WaitonDTMF('*')){
 		printf("No tone detected\n");
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
 	Pivot180();
 	
 	sleep(5);
-/*
+
 	// Waits at point D until hears DTMF A
 	if(!WaitonDTMF('A')){
 		printf("No tone detected\n");
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
 	TravelCircularPath(SMALLCIRCLE);
 	
 	sleep(100);
-*/
+
 	// close serial port
 	SerialClose();
 

@@ -33,7 +33,6 @@
 int WaitonDTMF (char tone){
 	float sample_data[SAMPLECHUNK];
 	float * output1, * output2;
-	int dtmf1, dtmf2;		// Two frequencies to look for.
 	char found = 0;
 	int windowsize1, windowsize2;
 	int filter1size, filter2size;
@@ -43,8 +42,6 @@ int WaitonDTMF (char tone){
 	FILE * fp = NULL;
 	switch (tone){
 		case '0':
-			dtmf1 = 1336;
-			dtmf2 = 941;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1336));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(941));
 			filter1 = (real64_T *)(FILTER(1336));
@@ -53,8 +50,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(941);
 			break;
 		case '1':
-			dtmf1 = 1209;
-			dtmf2 = 697;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1209));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(697));
 			filter1 = (real64_T *)(FILTER(1209));
@@ -63,8 +58,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(697);
 			break;
 		case '2':
-			dtmf1 = 1336;
-			dtmf2 = 697;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1336));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(697));
 			filter1 = (real64_T *)(FILTER(1336));
@@ -73,8 +66,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(697);
 			break;
 		case '3':
-			dtmf1 = 1477;
-			dtmf2 = 697;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1477));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(697));
 			filter1 = (real64_T *)(FILTER(1477));
@@ -83,8 +74,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(697);
 			break;
 		case 'A':
-			dtmf1 = 1633;
-			dtmf2 = 697;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1633));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(697));
 			filter1 = (real64_T *)(FILTER(1633));
@@ -93,8 +82,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(697);
 			break;
 		case '4':
-			dtmf1 = 1209;
-			dtmf2 = 770;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1209));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(770));
 			filter1 = (real64_T *)(FILTER(1209));
@@ -103,8 +90,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(770);
 			break;
 		case '5':
-			dtmf1 = 1336;
-			dtmf2 = 770;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1336));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(770));			
 			filter1 = (real64_T *)(FILTER(1336));
@@ -113,8 +98,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(770);
 			break;
 		case '6':
-			dtmf1 = 1477;
-			dtmf2 = 770;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1477));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(770));			
 			filter1 = (real64_T *)(FILTER(1477));
@@ -123,8 +106,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(770);
 			break;
 		case 'B':
-			dtmf1 = 1633;
-			dtmf2 = 770;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1633));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(770));		
 			filter1 = (real64_T *)(FILTER(1633));
@@ -133,8 +114,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(770);
 			break;
 		case '7':
-			dtmf1 = 1209;
-			dtmf2 = 852;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1209));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(852));	
 			filter1 = (real64_T *)(FILTER(1209));
@@ -143,8 +122,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(852);
 			break;
 		case '8':
-			dtmf1 = 1336;
-			dtmf2 = 852;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1336));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(852));
 			filter1 = (real64_T *)(FILTER(1336));
@@ -153,8 +130,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(852);
 			break;
 		case '9':
-			dtmf1 = 1477;
-			dtmf2 = 852;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1477));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(852));
 			filter1 = (real64_T *)(FILTER(1477));
@@ -163,8 +138,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(852);
 			break;
 		case 'C':
-			dtmf1 = 1633;
-			dtmf2 = 852;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1633));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(852));
 			filter1 = (real64_T *)(FILTER(1633));
@@ -173,8 +146,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(852);
 			break;
 		case '*':
-			dtmf1 = 1209;
-			dtmf2 = 941;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1209));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(941));
 			filter1 = (real64_T *)(FILTER(1209));
@@ -183,8 +154,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(941);
 			break;
 		case '#':
-			dtmf1 = 1477;
-			dtmf2 = 941;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1477));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(941));
 			filter1 = (real64_T *)(FILTER(1477));
@@ -193,8 +162,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(941);
 			break;
 		case 'D':
-			dtmf1 = 1633;
-			dtmf2 = 941;
 			windowsize1 = WINDOW_SIZE(FILTERSIZE(1633));
 			windowsize2 = WINDOW_SIZE(FILTERSIZE(941));
 			filter1 = (real64_T *)(FILTER(1633));
@@ -203,8 +170,6 @@ int WaitonDTMF (char tone){
 			filter2size = (int)FILTERSIZE(941);
 			break;
 		default :
-			dtmf1 = 0;
-			dtmf2 = 0;
 			windowsize1 = 0;
 			windowsize2 = 0;
 			filter1 = NULL;
@@ -281,7 +246,8 @@ int GetDataASCII (FILE * fp, float data [SAMPLECHUNK])
 		else if (feof(fp))
 			break;
 		else 
-			j--;	}
+			j--;
+	}
 	if ((fgetc(fp) == EOF))
 		return -1;
 	else
