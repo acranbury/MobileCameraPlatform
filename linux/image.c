@@ -30,7 +30,15 @@ void AnalyzeImage(){
 	
 	// open file in binary mode
 	fp = fopen(FILENAME, "rb");
+	if(fp == NULL){
+	  printf("Failed to open file: %s\n", FILENAME);
+	  return;
+	}
 	fp2 = fopen(FILE2, "wb");
+	if(fp2 == NULL){
+	  printf("Failed to open file: %s\n", FILE2);
+	  return;
+	}
 	
 	fwrite(FILESTART, 1, 15, fp2);
 	
