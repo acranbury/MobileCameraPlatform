@@ -1,0 +1,6 @@
+http://users.ece.cmu.edu/~eno/coding/CCodingStandard.html
+
+Additions:
+
+Always put spaces around operators in arithmetic, but not necessarily parentheses.
+eg - (a + b - c)

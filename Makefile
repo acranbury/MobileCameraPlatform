@@ -21,4 +21,4 @@ joystick:
 
 # Removes all object and executable files.
 clean:
-	rm -rf *.o circles-demo straight-lines-demo joystick
+	rm -rf *.o *.ppm circles-demo straight-lines-demo joystick

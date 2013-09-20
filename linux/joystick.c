@@ -27,7 +27,7 @@
 #define MAXPANRIGHT		180
 #define CAMTHRESHOLD	3000
 #define TURNTHRESHOLD	5
-#define TRIGTHRESHOLD	-32000
+#define TRIGTHRESHOLD	1000
 #define CMDDELAYLO		50000000
 #define CMDDELAYHI		10000000
 
@@ -41,7 +41,7 @@
 
 // strings
 #define GAMEPAD			"/dev/input/js0"
-#define WEBCAMIMAGE		"vlc-wrapper -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/MobileCameraPlatform --scene-prefix image --scene-format ppm vlc://quit --run-time=1"
+#define WEBCAMIMAGE		"vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/MobileCameraPlatform --scene-prefix image --scene-format ppm vlc://quit --run-time=1"
 #define WEBCAMAUDIO		"arecord -f cd -d 5 audio.wav"
 
 // make sure controller is set to XInput not DirectInput
@@ -338,8 +338,12 @@ int main (int argc, char **argv)
 			}
 
 // ************************ Speed Updates ******************************
+
 			// convert trigger values into speed
-			speed = (SPEEDMNUM * (axis[AXISRTRIG] - axis[AXISLTRIG])) / SPEEDMDEN;
+			if(abs(axis[AXISRTRIG] - axis[AXISLTRIG]) < TRIGTHRESHOLD)
+				speed = 0;
+			else
+				speed = (SPEEDMNUM * (axis[AXISRTRIG] - axis[AXISLTRIG])) / SPEEDMDEN;
 
 			// turn left
 			if(axis[AXISLTLR] < -TURNTHRESHOLD){
@@ -373,14 +377,14 @@ int main (int argc, char **argv)
 				snprintf(buffer, BUFSIZE+1, "mov0%4d", leftMotor);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 				oldLeft = leftMotor;
-				//printf("%s\n", buffer);
+				printf("%s\n", buffer);
 			}
 			if(rightMotor != oldRight){
 				// right motor
 				snprintf(buffer, BUFSIZE+1, "mov1%4d", rightMotor);
 				SerialWrite((unsigned char *)buffer,BUFSIZE);
 				oldRight = rightMotor;
-				//printf("%s\n", buffer);
+				printf("%s\n", buffer);
 			}
 
 			// get the current time and put it in prevTime
@@ -393,7 +397,7 @@ int main (int argc, char **argv)
 
 // waits for a 'D' DTMF tone
 void CaptureAudio(void){
-	//printf("DTMF Tone: %c\n", IdentifyDTMF());
+	printf("DTMF Tone: %c\n", IdentifyDTMF());
 }
 
 // calls "vlc -I dummy v4l2:///dev/video1 --video-filter scene --no-audio --scene-path ~/test --scene-prefix image --scene-format bmp vlc://quit --run-time=1"
