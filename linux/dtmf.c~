@@ -2,6 +2,8 @@
  * 	Program: DTMF.c
  * 
  * 	Author: Mark Mahony		April 25, 2013
+ * 
+ *  Revision: Add IdentifyDTMF, September 20, 2013. Mark Mahony
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,10 +33,10 @@
  * 	Output: Tone found.
  */
 
-int IdenftifyDTMF(){
+int IdentifyDTMF(){
 	float sample_data[SAMPLECHUNK]; // Audio sample data
 	float * output;		// Output of convolution
-	char found = 0;		// Flag determining if  a DTMF tone has been found.
+	int found = 0;		// Flag determining if  a DTMF tone has been found.
 	int samplecount = 0;	// Number of sample_data(s) that have been analyzed.
 	int fWindowsize[NUMTONES] = {WINDOW_SIZE(FILTERSIZE(697)),
 								WINDOW_SIZE(FILTERSIZE(770)),
@@ -60,7 +62,9 @@ int IdenftifyDTMF(){
 									(real64_T *)(FILTER(1336)),
 									(real64_T *)(FILTER(1477)),
 									(real64_T *)(FILTER(1633)),};	// Filter coefficients.
-	int windowsize;
+	// Smallest amount of filter taps will make it so that output is large enough
+	// for all output files.
+	int windowsize = fWindowsize[7];	// size 7 is tone 1633, with 74 taps.
 	int filtersize;
 	real64_T * filter;	
 	FILE * fp = NULL;	// Pointer to audio data file.
@@ -92,7 +96,7 @@ int IdenftifyDTMF(){
 				filter = fFilter[i];
 				filtersize = fFiltersize[i];
 				// Clear old data
-				memset(output, 0, sizeof(float) * windowsize);
+				memset(output, 0, sizeof(float) * fWindowsize[7]);
 				// Do the convolution, applying the filter.
 				Convolve(sample_data, output, filter, filtersize, windowsize);
 				// Analyze the convolved data for a DTMF tone.
@@ -107,15 +111,17 @@ int IdenftifyDTMF(){
 		}	// until end of file or the tone is found.
 	}	// until the tone is found.
 	
-	if (samplecount >= TIMEOUT)
-		return 0;
-	else
-		return 1;
-	
 	free(output);
 	if (fp != NULL){
 		fclose (fp);
 	}
+	
+	if (samplecount >= TIMEOUT)
+		return 0;
+	else
+		return found;
+	
+	
 }
 
 /*

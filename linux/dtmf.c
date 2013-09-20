@@ -62,7 +62,9 @@ int IdentifyDTMF(){
 									(real64_T *)(FILTER(1336)),
 									(real64_T *)(FILTER(1477)),
 									(real64_T *)(FILTER(1633)),};	// Filter coefficients.
-	int windowsize;
+	// Smallest amount of filter taps will make it so that output is large enough
+	// for all output files.
+	int windowsize = fWindowsize[7];	// size 7 is tone 1633, with 74 taps.
 	int filtersize;
 	real64_T * filter;	
 	FILE * fp = NULL;	// Pointer to audio data file.
@@ -94,7 +96,7 @@ int IdentifyDTMF(){
 				filter = fFilter[i];
 				filtersize = fFiltersize[i];
 				// Clear old data
-				memset(output, 0, sizeof(float) * windowsize);
+				memset(output, 0, sizeof(float) * fWindowsize[7]);  // Write whole array to zeroes.
 				// Do the convolution, applying the filter.
 				Convolve(sample_data, output, filter, filtersize, windowsize);
 				// Analyze the convolved data for a DTMF tone.
