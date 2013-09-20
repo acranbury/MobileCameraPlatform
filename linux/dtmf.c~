@@ -33,10 +33,11 @@
  * 	Output: Tone found.
  */
 
-int IdentifyDTMF(){
+char IdentifyDTMF(){
 	float sample_data[SAMPLECHUNK]; // Audio sample data
 	float * output;		// Output of convolution
 	int found = 0;		// Flag determining if  a DTMF tone has been found.
+	int tone1 = 0, tone2 = 0; // Second tone.
 	int samplecount = 0;	// Number of sample_data(s) that have been analyzed.
 	int fWindowsize[NUMTONES] = {WINDOW_SIZE(FILTERSIZE(697)),
 								WINDOW_SIZE(FILTERSIZE(770)),
@@ -80,15 +81,18 @@ int IdentifyDTMF(){
 	}
 
 	// Start polling for tones. 
-	while ((!found) && (samplecount < TIMEOUT)){ // Keep waiting	
+	while ((!tone2) && (samplecount < TIMEOUT)){ // Keep waiting	
 		if (fp != NULL)		// If  the previous data was unsuccessful, close it.
 			fclose(fp);
 		system(WEBCAMDTMF);
 		samplecount++;
 		if (!(fp = fopen(DTMFRECORDING, "rb")))		// Open sample data and check if it was opened sucessfully.
 			printf ("Error opening file\n");
+
+		tone1 = 0; 
+		tone2 = 0;
 		
-		while ((!found) && (GetDataDATA (fp, sample_data) == 0)) {		// Continue 
+		while ((!tone2) && (GetDataDATA (fp, sample_data) == 0)) {		// Continue 
 			// Compare the audio data against each filter.
 			for (i = 0; i < NUMTONES; i++){
 				// Set filter parameters
@@ -96,13 +100,17 @@ int IdentifyDTMF(){
 				filter = fFilter[i];
 				filtersize = fFiltersize[i];
 				// Clear old data
-				memset(output, 0, sizeof(float) * fWindowsize[7]);
+				memset(output, 0, sizeof(float) * fWindowsize[7]);  // Write whole array to zeroes.
 				// Do the convolution, applying the filter.
 				Convolve(sample_data, output, filter, filtersize, windowsize);
 				// Analyze the convolved data for a DTMF tone.
 				found = AnalyzeOneTone(output, windowsize);
 				if (found != 0){
-					found = tones[i];
+					tone1 = tones[i];
+					found = 0;
+				}
+				else if (tone1 != 0 && found != 0){
+					tone2 = tones[i];
 				}
 				/*for (i = 0; i < SAMPLECHUNK; i++){
 					printf ("%f\n", sample_data[i]); 
@@ -110,18 +118,160 @@ int IdentifyDTMF(){
 			}
 		}	// until end of file or the tone is found.
 	}	// until the tone is found.
-	
+
 	free(output);
 	if (fp != NULL){
 		fclose (fp);
 	}
 	
-	if (samplecount >= TIMEOUT)
-		return 0;
-	else
-		return found;
-	
-	
+	switch (tone1){
+		case 697:
+			switch (tone2){
+				case 1209:
+					return '1';
+					break;
+				case 1336:
+					return '2';
+					break;
+				case 1477:
+					return '3';
+					break;
+				case 1633:
+					return 'A';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 770:
+			switch (tone2){
+				case 1209:
+					return '4';
+					break;
+				case 1336:
+					return '5';
+					break;
+				case 1477:
+					return '6';
+					break;
+				case 1633:
+					return 'B';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 852:
+			switch (tone2){
+				case 1209:
+					return '7';
+					break;
+				case 1336:
+					return '8';
+					break;
+				case 1477:
+					return '9';
+					break;
+				case 1633:
+					return 'C';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 941:
+			switch (tone2){
+				case 1209:
+					return '*';
+					break;
+				case 1336:
+					return '0';
+					break;
+				case 1477:
+					return '#';
+					break;
+				case 1633:
+					return 'D';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 1209:
+			switch (tone2){
+				case 697:
+					return '1';
+					break;
+				case 770:
+					return '4';
+					break;
+				case 852:
+					return '7';
+					break;
+				case 941:
+					return '*';
+					break;
+				default:
+					break;
+			}
+		break;	
+		case 1336:
+			switch (tone2){
+				case 697:
+					return '2';
+					break;
+				case 770:
+					return '5';
+					break;
+				case 852:
+					return '8';
+					break;
+				case 941:
+					return '0';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 1477:
+			switch (tone2){
+				case 697:
+					return '3';
+					break;
+				case 770:
+					return '6';
+					break;
+				case 852:
+					return '9';
+					break;
+				case 941:
+					return '#';
+					break;
+				default:
+					break;
+			}
+		break;
+		case 1633:
+			switch (tone2){
+				case 697:
+					return 'A';
+					break;
+				case 770:
+					return 'B';
+					break;
+				case 852:
+					return 'C';
+					break;
+				case 941:
+					return 'D';
+					break;
+				default:
+					break;
+			}
+		break;
+	default:
+		return '0';
+	}
 }
 
 /*
@@ -465,7 +615,7 @@ int AnalyzeOneTone (float * result, int size){
 	
 	
 
-	printf("Average: %.10f \n", average);
+	//printf("Average: %.10f \n", average);
 	if (average > PRESENCE_THRESHOLD)
 		return 1;
 	else
