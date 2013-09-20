@@ -33,10 +33,10 @@
  * 	Output: Tone found.
  */
 
-int IdenftifyDTMF(){
+int IdentifyDTMF(){
 	float sample_data[SAMPLECHUNK]; // Audio sample data
 	float * output;		// Output of convolution
-	char found = 0;		// Flag determining if  a DTMF tone has been found.
+	int found = 0;		// Flag determining if  a DTMF tone has been found.
 	int samplecount = 0;	// Number of sample_data(s) that have been analyzed.
 	int fWindowsize[NUMTONES] = {WINDOW_SIZE(FILTERSIZE(697)),
 								WINDOW_SIZE(FILTERSIZE(770)),
@@ -109,15 +109,17 @@ int IdenftifyDTMF(){
 		}	// until end of file or the tone is found.
 	}	// until the tone is found.
 	
-	if (samplecount >= TIMEOUT)
-		return 0;
-	else
-		return 1;
-	
 	free(output);
 	if (fp != NULL){
 		fclose (fp);
 	}
+	
+	if (samplecount >= TIMEOUT)
+		return 0;
+	else
+		return found;
+	
+	
 }
 
 /*
