@@ -2,7 +2,6 @@
 #define _dtmf_h
 
 #include "tmwtypes.h"
-#include <stdio.h>
 
 /*************************DEFINES*******************************/
 // Record for 1 second, with big endian float audio.

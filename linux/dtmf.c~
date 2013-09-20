@@ -2,8 +2,6 @@
  * 	Program: DTMF.c
  * 
  * 	Author: Mark Mahony		April 25, 2013
- * 
- *  Revision: Add IdentifyDTMF, September 20, 2013. Mark Mahony
  */
 #include <stdlib.h>
 #include <stdio.h>
