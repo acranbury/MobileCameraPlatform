@@ -1,0 +1,21 @@
+Code Review Minutes - Alan, Jack, Mark
+
+Time
+5:15	Deliberated over which modules to review
+	  Chose image.c - Alan
+		timers.c - Jack
+		dtmf.c - Mark
+
+5:20	Decided on minutes taker (Alan) and action items recoder (Jack)
+
+5:25	Started code review of image.c (Alan)
+
+6:05 	Finished code review of image.c
+
+6:06	Started code review of timer.c (Jack)
+
+6:20	Finished code review of timer.c
+
+6:22	Started code review of dtmf.c (Mark)
+
+7:10	Finished code review of dtmf.c
